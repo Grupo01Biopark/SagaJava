@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@CrossOrigin(origins = "*")
 public class FormularioController {
     private final FormularioService formularioService;
     private final ChecklistService checklistService;

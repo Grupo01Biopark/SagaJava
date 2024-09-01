@@ -10,7 +10,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -29,23 +28,8 @@ public class SpringSecurity {
         http.csrf().disable()
                 .authorizeHttpRequests((authorize) ->
                         authorize
-                                .requestMatchers("/cadastro/**").permitAll()  // Usando antMatchers ao invés de requestMatchers
-                                .requestMatchers("/login").permitAll()
-                                .requestMatchers("/users").hasRole("ADMIN")
-                                .anyRequest().authenticated()  // Qualquer outra requisição precisa estar autenticada
-                )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/dashboard", true)  // Redireciona para /dashboard após o login bem-sucedido
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll()
-                )
-                .exceptionHandling().accessDeniedPage("/403");  // Página de acesso negado
+                                .anyRequest().permitAll()  // Permite todas as requisições sem autenticação
+                );
         return http.build();
     }
 

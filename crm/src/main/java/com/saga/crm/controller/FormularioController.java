@@ -11,7 +11,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-@Controller
+@RestController
 public class FormularioController {
     private final FormularioService formularioService;
     private final ChecklistService checklistService;
@@ -76,11 +76,8 @@ public class FormularioController {
     }
 
     @GetMapping("/formulario/listar")
-    public String listarFormularios(Model model) {
-        List<Formulario> formularios = formularioService.getAllFormulario();
-
-        model.addAttribute("formularios", formularios);
-        return "formularios/list";
+    public List<Formulario> listarFormularios() {
+        return formularioService.getAllFormulario();
     }
 
     @GetMapping("/formulario/{id}/iniciar")

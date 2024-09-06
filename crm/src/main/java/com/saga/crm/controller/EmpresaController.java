@@ -48,13 +48,26 @@ public class EmpresaController {
     }
 
     @PostMapping("/adicionar")
-    public ResponseEntity<?> adicionarEmpresa(@RequestBody Empresa empresa) {
+    public ResponseEntity<Map<String, Object>> adicionarEmpresa(@RequestBody Empresa empresa) {
         try {
             empresaService.cadastrarEmpresa(empresa);
-            return ResponseEntity.ok(empresa);
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("success", true);
+            response.put("message", "Empresa adicionada com sucesso");
+            response.put("data", Map.of(
+                    "id", empresa.getId(),
+                    "titulo", empresa.getNomeFantasia()
+            ));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Falha ao adicionar empresa: " + e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao adicionar empresa");
+            errorResponse.put("error", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
@@ -74,10 +87,23 @@ public class EmpresaController {
         try {
             empresa.setId(id);
             empresaService.editarEmpresa(empresa);
-            return ResponseEntity.ok(empresa);
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("success", true);
+            response.put("message", "Empresa editada com sucesso");
+            response.put("data", Map.of(
+                    "id", empresa.getId(),
+                    "titulo", empresa.getNomeFantasia()
+            ));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Falha ao editar empresa: " + e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao editar empresa");
+            errorResponse.put("error", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
@@ -85,10 +111,22 @@ public class EmpresaController {
     public ResponseEntity<?> excluirEmpresa(@PathVariable Long id) {
         try {
             empresaService.excluirEmpresa(id);
-            return ResponseEntity.ok("Empresa excluída com sucesso.");
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("success", true);
+            response.put("message", "Empresa excluida com sucesso");
+            response.put("data", Map.of(
+                    "id", id
+            ));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Falha ao excluir empresa: " + e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao excluir empresa");
+            errorResponse.put("error", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 }

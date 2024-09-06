@@ -9,13 +9,18 @@ import com.saga.crm.service.PerguntasService;
 import com.saga.crm.service.PorteService;
 import com.saga.crm.service.SetorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-@Controller
+@RestController
+@RequestMapping("/perguntas")
 public class PerguntasController {
 
     private final PerguntasService perguntasService;
@@ -31,98 +36,178 @@ public class PerguntasController {
         this.porteService = porteService;
     }
 
-    @GetMapping("/perguntas")
-    public String perguntasForm(Model model) {
+    @GetMapping("/listar")
+    public ResponseEntity<Map<String, Object>> listarPerguntas() {
         List<Perguntas> perguntas = perguntasService.getAllPerguntas();
         List<Eixo> eixos = eixoService.getAllEixos();
         List<Setor> setores = setorService.getAllSetores();
         List<Porte> portes = porteService.getAllPortes();
 
-        model.addAttribute("perguntas", perguntas);
-        model.addAttribute("eixos", eixos);
-        model.addAttribute("setores", setores);
-        model.addAttribute("portes", portes);
-        return "perguntas/index";
+        Map<String, Object> response = new HashMap<>();
+        response.put("perguntas", perguntas);
+        response.put("eixos", eixos);
+        response.put("setores", setores);
+        response.put("portes", portes);
+
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/perguntas/adicionar")
-    public String adicionarPergunta(@RequestParam("descricao") String descricao,
-                                    @RequestParam("titulo") String titulo,
-                                    @RequestParam("eixo") String eixoTitulo,
-                                    @RequestParam("porte") String porteTitulo,
-                                    @RequestParam("setor") String setorTitulo) {
+    @PostMapping("/adicionar")
+    public ResponseEntity<Map<String, Object>> adicionarPergunta(@RequestBody Perguntas perguntaRequest) {
 
         Perguntas pergunta = new Perguntas();
-        pergunta.setDescricao(descricao);
-        pergunta.setTitulo(titulo);
+        pergunta.setDescricao(perguntaRequest.getDescricao());
+        pergunta.setTitulo(perguntaRequest.getTitulo());
 
         // Processar Eixo
-        Eixo eixo = eixoService.findEixoByTitulo(eixoTitulo);
+        Eixo eixo = eixoService.findEixoByTitulo(perguntaRequest.getEixo().getTitulo());
         if (eixo == null) {
             eixo = new Eixo();
-            eixo.setTitulo(eixoTitulo);
+            eixo.setTitulo(perguntaRequest.getEixo().getTitulo());
             eixoService.save(eixo);
         }
         pergunta.setEixo(eixo);
 
         // Processar Setor
-        Setor setor = setorService.findSetorByTitulo(setorTitulo);
+        Setor setor = setorService.findSetorByTitulo(perguntaRequest.getSetor().getTitulo());
         if (setor == null) {
             setor = new Setor();
-            setor.setTitulo(setorTitulo);
+            setor.setTitulo(perguntaRequest.getSetor().getTitulo());
             setorService.save(setor);
         }
         pergunta.setSetor(setor);
 
         // Processar Porte
-        Porte porte = porteService.findPorteByTitulo(porteTitulo);
+        Porte porte = porteService.findPorteByTitulo(perguntaRequest.getPorte().getTitulo());
         if (porte == null) {
             porte = new Porte();
-            porte.setTitulo(porteTitulo);
+            porte.setTitulo(perguntaRequest.getPorte().getTitulo());
             porteService.save(porte);
         }
         pergunta.setPorte(porte);
 
-        perguntasService.save(pergunta);
+        try {
+            perguntasService.save(pergunta);
 
-        return "redirect:/perguntas";
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Pergunta adicionada com sucesso");
+            response.put("data", Map.of(
+                    "id", pergunta.getId(),
+                    "titulo", pergunta.getTitulo()
+            ));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        }catch (Exception e) {
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao adicionar pergunta");
+            errorResponse.put("error", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
-    @GetMapping("/perguntas/editar/{id}")
-    public String editarPergunta(@PathVariable Long id, Model model) {
-        Perguntas pergunta = perguntasService.getPerguntaById(id);
-        List<Eixo> eixos = eixoService.getAllEixos();
-        List<Setor> setores = setorService.getAllSetores();
-        List<Porte> portes = porteService.getAllPortes();
 
-        model.addAttribute("pergunta", pergunta);
-        model.addAttribute("eixos", eixos);
-        model.addAttribute("setores", setores);
-        model.addAttribute("portes", portes);
-
-        return "perguntas/editar";
-    }
-
-    @PostMapping("/perguntas/editar/{id}")
-    public String atualizarPergunta(@PathVariable Long id, @ModelAttribute Perguntas pergunta) {
+    @PostMapping("/editar/{id}")
+    public ResponseEntity<Map<String, Object>> atualizarPergunta(@PathVariable Long id, @RequestBody Perguntas pergunta) {
         Perguntas perguntaExistente = perguntasService.getPerguntaById(id);
 
         if (perguntaExistente != null) {
+            // Validar e Processar Eixo
+            Eixo eixo = eixoService.findEixoByTitulo(pergunta.getEixo().getTitulo());
+            if (eixo == null) {
+                eixo = new Eixo();
+                eixo.setTitulo(pergunta.getEixo().getTitulo());
+                eixoService.save(eixo);
+            }
+            perguntaExistente.setEixo(eixo);
+
+            // Validar e Processar Setor
+            Setor setor = setorService.findSetorByTitulo(pergunta.getSetor().getTitulo());
+            if (setor == null) {
+                setor = new Setor();
+                setor.setTitulo(pergunta.getSetor().getTitulo());
+                setorService.save(setor);
+            }
+            perguntaExistente.setSetor(setor);
+
+            // Validar e Processar Porte
+            Porte porte = porteService.findPorteByTitulo(pergunta.getPorte().getTitulo());
+            if (porte == null) {
+                porte = new Porte();
+                porte.setTitulo(pergunta.getPorte().getTitulo());
+                porteService.save(porte);
+            }
+            perguntaExistente.setPorte(porte);
+
+            // Atualizar Título e Descrição
             perguntaExistente.setTitulo(pergunta.getTitulo());
             perguntaExistente.setDescricao(pergunta.getDescricao());
-            perguntaExistente.setEixo(pergunta.getEixo());
-            perguntaExistente.setPorte(pergunta.getPorte());
-            perguntaExistente.setSetor(pergunta.getSetor());
 
-            perguntasService.save(perguntaExistente);
+            try {
+                perguntasService.save(perguntaExistente);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Pergunta editada com sucesso");
+                response.put("data", Map.of(
+                        "id", perguntaExistente.getId(),
+                        "titulo", perguntaExistente.getTitulo()
+                ));
+
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            }catch (Exception e) {
+
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Erro ao editar pergunta");
+                errorResponse.put("error", e.getMessage());
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            }
+        } else {
+            Map<String, Object> notFoundResponse = new HashMap<>();
+            notFoundResponse.put("success", false);
+            notFoundResponse.put("message", "Pergunta não encontrada");
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(notFoundResponse);
         }
-
-        return "redirect:/perguntas";
     }
 
-    @PostMapping("/perguntas/excluir/{id}")
-    public String excluirPergunta(@PathVariable Long id) {
-        perguntasService.excluirPergunta(id);
-        return "redirect:/perguntas";
+    @DeleteMapping("/excluir/{id}")
+    public ResponseEntity<Map<String, Object>> excluirPergunta(@PathVariable Long id) {
+        Perguntas pergunta = perguntasService.getPerguntaById(id);
+
+        if (pergunta != null) {
+            try {
+                perguntasService.excluirPergunta(pergunta.getId());
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Pergunta deletada com sucesso");
+                response.put("data", Map.of(
+                        "id", pergunta.getId(),
+                        "titulo", pergunta.getTitulo()
+                ));
+
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            }catch (Exception e) {
+
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Erro ao deletar pergunta");
+                errorResponse.put("error", e.getMessage());
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            }
+        } else {
+            Map<String, Object> notFoundResponse = new HashMap<>();
+            notFoundResponse.put("success", false);
+            notFoundResponse.put("message", "Pergunta não encontrada");
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(notFoundResponse);
+        }
     }
 }

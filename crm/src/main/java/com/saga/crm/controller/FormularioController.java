@@ -3,13 +3,18 @@ package com.saga.crm.controller;
 import com.saga.crm.model.*;
 import com.saga.crm.service.*;
 import org.hibernate.annotations.Check;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -35,69 +40,143 @@ public class FormularioController {
     }
 
     @GetMapping("/formulario")
-    public String formularioForm(Model model) {
-        List<Checklist> ambientalChecklists = checklistService.getChecklistByEixo(1);
-        List<Checklist> governancaChecklists = checklistService.getChecklistByEixo(2);
-        List<Checklist> socialChecklists = checklistService.getChecklistByEixo(3);
+    public ResponseEntity<Map<String, Object>> formularioForm() {
+        // Obter as listas de checklists por eixo
+        List<Map<String, Object>> ambientalChecklists = checklistService.getChecklistByEixo(1).stream()
+                .map(checklist -> {
+                    Map<String, Object> checklistMap = new HashMap<>();
+                    checklistMap.put("id", checklist.getId());
+                    checklistMap.put("titulo", checklist.getTitulo());
+                    checklistMap.put("descricao", checklist.getDescricao());
+                    return checklistMap;
+                }).collect(Collectors.toList());
 
-        model.addAttribute("ambientalChecklists", ambientalChecklists);
-        model.addAttribute("governancaChecklists", governancaChecklists);
-        model.addAttribute("socialChecklists", socialChecklists);
+        List<Map<String, Object>> governancaChecklists = checklistService.getChecklistByEixo(2).stream()
+                .map(checklist -> {
+                    Map<String, Object> checklistMap = new HashMap<>();
+                    checklistMap.put("id", checklist.getId());
+                    checklistMap.put("titulo", checklist.getTitulo());
+                    checklistMap.put("descricao", checklist.getDescricao());
+                    return checklistMap;
+                }).collect(Collectors.toList());
 
-        return "formularios/index";
+        List<Map<String, Object>> socialChecklists = checklistService.getChecklistByEixo(3).stream()
+                .map(checklist -> {
+                    Map<String, Object> checklistMap = new HashMap<>();
+                    checklistMap.put("id", checklist.getId());
+                    checklistMap.put("titulo", checklist.getTitulo());
+                    checklistMap.put("descricao", checklist.getDescricao());
+                    return checklistMap;
+                }).collect(Collectors.toList());
+
+        // Montar a resposta JSON
+        Map<String, Object> response = new HashMap<>();
+        response.put("ambientalChecklists", ambientalChecklists);
+        response.put("governancaChecklists", governancaChecklists);
+        response.put("socialChecklists", socialChecklists);
+
+        return ResponseEntity.ok(response);
     }
+
 
     @PostMapping("/formulario/adicionar")
-    public String adicionarFormulario(@RequestParam("titulo") String titulo, @RequestParam("descricao") String descricao, @RequestParam("governancaChecklist") Long governancaChecklistId, @RequestParam("ambientalChecklist") Long ambientalChecklistId, @RequestParam("socialChecklist") Long socialChecklistId)  {
-        Formulario formulario = new Formulario();
-        formulario.setTitulo(titulo);
-        formulario.setDescricao(descricao);
-        formularioService.save(formulario);
+    public ResponseEntity<Map<String, Object>> adicionarFormulario(@RequestBody Map<String, Object> requestData) {
+        try {
+            // Extrair os campos do corpo da requisição
+            String titulo = (String) requestData.get("titulo");
+            String descricao = (String) requestData.get("descricao");
+            Long governancaChecklistId = ((Number) requestData.get("governancaChecklist")).longValue();
+            Long ambientalChecklistId = ((Number) requestData.get("ambientalChecklist")).longValue();
+            Long socialChecklistId = ((Number) requestData.get("socialChecklist")).longValue();
 
-        //Salvar o Formulario de Governança
-        FormularioChecklist formularioChecklistGovernanca = new FormularioChecklist();
-        formularioChecklistGovernanca.setFormulario(formulario);
-        formularioChecklistGovernanca.setChecklist(checklistService.getChecklistById(governancaChecklistId));
-        formularioChecklistService.save(formularioChecklistGovernanca);
+            // Criar e salvar o formulário
+            Formulario formulario = new Formulario();
+            formulario.setTitulo(titulo);
+            formulario.setDescricao(descricao);
+            formularioService.save(formulario);
 
-        //Salvar o Formulario de Ambiental
-        FormularioChecklist formularioChecklistAmbiental = new FormularioChecklist();
-        formularioChecklistAmbiental.setFormulario(formulario);
-        formularioChecklistAmbiental.setChecklist(checklistService.getChecklistById(ambientalChecklistId));
-        formularioChecklistService.save(formularioChecklistAmbiental);
+            // Salvar o Formulario de Governança
+            FormularioChecklist formularioChecklistGovernanca = new FormularioChecklist();
+            formularioChecklistGovernanca.setFormulario(formulario);
+            formularioChecklistGovernanca.setChecklist(checklistService.getChecklistById(governancaChecklistId));
+            formularioChecklistService.save(formularioChecklistGovernanca);
 
-        //Salvar o Formulario de Social
-        FormularioChecklist formularioChecklistSocial = new FormularioChecklist();
-        formularioChecklistSocial.setFormulario(formulario);
-        formularioChecklistSocial.setChecklist(checklistService.getChecklistById(socialChecklistId));
-        formularioChecklistService.save(formularioChecklistSocial);
+            // Salvar o Formulario de Ambiental
+            FormularioChecklist formularioChecklistAmbiental = new FormularioChecklist();
+            formularioChecklistAmbiental.setFormulario(formulario);
+            formularioChecklistAmbiental.setChecklist(checklistService.getChecklistById(ambientalChecklistId));
+            formularioChecklistService.save(formularioChecklistAmbiental);
 
+            // Salvar o Formulario de Social
+            FormularioChecklist formularioChecklistSocial = new FormularioChecklist();
+            formularioChecklistSocial.setFormulario(formulario);
+            formularioChecklistSocial.setChecklist(checklistService.getChecklistById(socialChecklistId));
+            formularioChecklistService.save(formularioChecklistSocial);
 
-        return "redirect:/formulario";
+            // Resposta JSON com sucesso
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Formulário criado com sucesso");
+            response.put("data", Map.of(
+                    "id", formulario.getId(),
+                    "titulo", formulario.getTitulo(),
+                    "descricao", formulario.getDescricao()
+            ));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (Exception e) {
+            // Resposta JSON com erro
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao criar o formulário");
+            errorResponse.put("error", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
+
     @GetMapping("/formulario/listar")
-    public List<Formulario> listarFormularios() {
-        return formularioService.getAllFormulario();
+    public List<Map<String, Object>> listarFormularios() {
+        return formularioService.getAllFormulario().stream()
+                .map(formulario -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", formulario.getId());
+                    map.put("titulo", formulario.getTitulo());
+                    map.put("descricao", formulario.getDescricao());
+                    return map;
+                })
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/formulario/{id}/iniciar")
-    public String iniciarFormulario(@PathVariable("id") Long id, Model model) {
+    public Map<String, Object> iniciarFormulario(@PathVariable("id") Long id) {
         Formulario formulario = formularioService.getFormularioById(id);
 
-        List<Empresa> empresas = empresaService.getAllEmpresas();
-
-        // Formatar o CNPJ de cada empresa
-        for (Empresa empresa : empresas) {
-            empresa.setCnpj(formatCNPJ(empresa.getCnpj()));
+        if (formulario == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Formulário não encontrado");
         }
 
+        List<Map<String, Object>> empresas = empresaService.getAllEmpresas().stream()
+                .map(empresa -> {
+                    Map<String, Object> empresaMap = new HashMap<>();
+                    empresaMap.put("id", empresa.getId());
+                    empresaMap.put("nome", empresa.getNomeFantasia());
+                    empresaMap.put("cnpj", formatCNPJ(empresa.getCnpj()));
+                    return empresaMap;
+                })
+                .collect(Collectors.toList());
 
-        model.addAttribute("formulario", formulario);
-        model.addAttribute("empresas", empresas);
+        Map<String, Object> response = new HashMap<>();
+        response.put("formularioId", formulario.getId());
+        response.put("empresas", empresas);
 
-        return "formularios/iniciar";
+        return response;
     }
+
+
+
     @GetMapping("/formulario/{id}/iniciar/respostas/{empresaId}")
     public String iniciarFormularioRespostas(@PathVariable("id") Long id, Model model, @PathVariable("empresaId") Long empresaId) {
         Formulario formulario = formularioService.getFormularioById(id);
@@ -170,31 +249,71 @@ public class FormularioController {
     }
 
     @PostMapping("/formulario/{id}/iniciar/respostas/{empresaId}/salvar")
-    public String salvarRespostas(@PathVariable("id") Long id, @PathVariable("empresaId") Long empresaId, @RequestBody Map<String, Object> requestBody) {
+    public ResponseEntity<Map<String, Object>> salvarRespostas(
+            @PathVariable("id") Long id,
+            @PathVariable("empresaId") Long empresaId,
+            @RequestBody Map<String, Object> requestBody) {
 
+        try {
+            List<Map<String, Object>> respostas = (List<Map<String, Object>>) requestBody.get("respostas");
 
-        List<Map<String, Object>> respostas = (List<Map<String, Object>>) requestBody.get("respostas");
-        Map<String, Object> respostaGovObj = respostas.get(0);
-        List<Map<String, Object>> respostasGov = (List<Map<String, Object>>) respostaGovObj.get("respostasGov");
-        Integer formularioChecklistIdGov = Integer.parseInt((String) respostaGovObj.get("idFormularioChecklistGov"));
+            // Extrair e processar respostas
+            Map<String, Object> respostaGovObj = respostas.get(0);
+            List<Map<String, Object>> respostasGov = (List<Map<String, Object>>) respostaGovObj.get("respostasGov");
+            Integer formularioChecklistIdGov = Integer.parseInt((String) respostaGovObj.get("idFormularioChecklistGov"));
 
-        Map<String, Object> respostaAmbObj = respostas.get(1);
-        List<Map<String, Object>> respostasAmb = (List<Map<String, Object>>) respostaAmbObj.get("respostasAmb");
-        Integer formularioChecklistIdAmb = Integer.parseInt((String) respostaAmbObj.get("idFormularioChecklistAmb"));
+            Map<String, Object> respostaAmbObj = respostas.get(1);
+            List<Map<String, Object>> respostasAmb = (List<Map<String, Object>>) respostaAmbObj.get("respostasAmb");
+            Integer formularioChecklistIdAmb = Integer.parseInt((String) respostaAmbObj.get("idFormularioChecklistAmb"));
 
-        Map<String, Object> respostaSocObj = respostas.get(2);
-        List<Map<String, Object>> respostasSoc = (List<Map<String, Object>>) respostaSocObj.get("respostasSoc");
-        Integer formularioChecklistIdSoc = Integer.parseInt((String) respostaSocObj.get("idFormularioChecklistSoc"));
+            Map<String, Object> respostaSocObj = respostas.get(2);
+            List<Map<String, Object>> respostasSoc = (List<Map<String, Object>>) respostaSocObj.get("respostasSoc");
+            Integer formularioChecklistIdSoc = Integer.parseInt((String) respostaSocObj.get("idFormularioChecklistSoc"));
 
+            Certificados certificados = new Certificados();
+            certificados.setData(new Date());
+            certificados.setEmpresa(empresaService.getEmpresaById(empresaId));
 
-        Certificados certificados = new Certificados();
-        certificados.setData(new Date());
-        certificados.setEmpresa(empresaService.getEmpresaById(empresaId));
+            // Processar respostas e calcular notas
+            boolean formularioReprovarGov = processarRespostas(respostasGov, formularioChecklistIdGov);
+            boolean formularioReprovarAmb = processarRespostas(respostasAmb, formularioChecklistIdAmb);
+            boolean formularioReprovarSoc = processarRespostas(respostasSoc, formularioChecklistIdSoc);
 
-        boolean formularioReprovarGov = false;
-        Integer existeMedioGov = 0;
-        for (Map<String, Object> resposta : respostasGov) {
-            FormularioChecklist formularioChecklistgov = formularioChecklistService.getFormularioChecklistById(Long.valueOf(formularioChecklistIdGov));
+            // Definir notas
+            certificados.setNota_gov(calcularNota(formularioReprovarGov, respostasGov));
+            certificados.setNota_amb(calcularNota(formularioReprovarAmb, respostasAmb));
+            certificados.setNota_soc(calcularNota(formularioReprovarSoc, respostasSoc));
+
+            // Definir aprovação
+            certificados.setAprovado(!formularioReprovarGov && !formularioReprovarAmb && !formularioReprovarSoc);
+
+            certificados.setFormulario(formularioService.getFormularioById(id));
+            certificadosService.save(certificados);
+
+            // Resposta JSON de sucesso
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Respostas salvas com sucesso");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            // Resposta JSON de erro
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao salvar respostas");
+            errorResponse.put("error", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    private boolean processarRespostas(List<Map<String, Object>> respostas, Integer formularioChecklistId) {
+        boolean formularioReprovar = false;
+        int existeMedio = 0;
+
+        for (Map<String, Object> resposta : respostas) {
+            FormularioChecklist formularioChecklist = formularioChecklistService.getFormularioChecklistById(Long.valueOf(formularioChecklistId));
 
             String idPergunta = (String) resposta.get("idPergunta");
             Perguntas pergunta = perguntasService.getPerguntaById(Long.valueOf(idPergunta));
@@ -205,120 +324,29 @@ public class FormularioController {
             Respostas respostas1 = new Respostas();
             respostas1.setConformidade(conformidade);
             respostas1.setPergunta(pergunta);
-            respostas1.setFormularioChecklists(formularioChecklistgov);
+            respostas1.setFormularioChecklists(formularioChecklist);
             respostas1.setObservacoes(observacoes);
             respostasService.save(respostas1);
 
-            if(conformidade == 3){
-                formularioReprovarGov = true;
-            }else{
-                if(conformidade == 2){
-                    existeMedioGov++;
-                }
+            if (conformidade == 3) {
+                formularioReprovar = true;
+            } else if (conformidade == 2) {
+                existeMedio++;
             }
         }
 
-        //        Nota Governança
-        if(formularioReprovarGov){
-            certificados.setNota_gov(3L);
-        }else{
-            if (existeMedioGov > 1){
-                certificados.setNota_gov(2L);
-            }else{
-                certificados.setNota_gov(1L);
-            }
+        return formularioReprovar;
+    }
+
+    private Long calcularNota(boolean formularioReprovar, List<Map<String, Object>> respostas) {
+        if (formularioReprovar) {
+            return 3L;
+        } else {
+            long existeMedio = respostas.stream()
+                    .filter(resposta -> Integer.parseInt((String) resposta.get("conformidade")) == 2)
+                    .count();
+            return (existeMedio > 1) ? 2L : 1L;
         }
-
-        boolean formularioReprovarAmb = false;
-        Integer existeMedioAmb = 0;
-        for (Map<String, Object> resposta : respostasAmb) {
-            FormularioChecklist formularioChecklistAmb = formularioChecklistService.getFormularioChecklistById(Long.valueOf(formularioChecklistIdAmb));
-
-            String idPergunta = (String) resposta.get("idPergunta");
-            Perguntas pergunta = perguntasService.getPerguntaById(Long.valueOf(idPergunta));
-
-            Integer conformidade = Integer.parseInt((String) resposta.get("conformidade"));
-            String observacoes = (String) resposta.get("observacoes");
-
-            Respostas respostas1 = new Respostas();
-            respostas1.setConformidade(conformidade);
-            respostas1.setPergunta(pergunta);
-            respostas1.setFormularioChecklists(formularioChecklistAmb);
-            respostas1.setObservacoes(observacoes);
-            respostasService.save(respostas1);
-
-            if(conformidade == 3){
-                formularioReprovarAmb = true;
-            }else{
-                if(conformidade == 2){
-                    existeMedioAmb++;
-                }
-            }
-        }
-
-        //        Nota Ambiental
-        if(formularioReprovarAmb){
-            certificados.setNota_amb(3L);
-        }else{
-            if (existeMedioAmb > 1){
-                certificados.setNota_amb(2L);
-            }else{
-                certificados.setNota_amb(1L);
-            }
-        }
-
-
-        boolean formularioReprovarSoc = false;
-        Integer existeMedioSoc = 0;
-        for (Map<String, Object> resposta : respostasSoc) {
-            FormularioChecklist formularioChecklistSoc = formularioChecklistService.getFormularioChecklistById(Long.valueOf(formularioChecklistIdSoc));
-
-            String idPergunta = (String) resposta.get("idPergunta");
-            Perguntas pergunta = perguntasService.getPerguntaById(Long.valueOf(idPergunta));
-
-            Integer conformidade = Integer.parseInt((String) resposta.get("conformidade"));
-            String observacoes = (String) resposta.get("observacoes");
-
-            Respostas respostas1 = new Respostas();
-            respostas1.setConformidade(conformidade);
-            respostas1.setPergunta(pergunta);
-            respostas1.setFormularioChecklists(formularioChecklistSoc);
-            respostas1.setObservacoes(observacoes);
-            respostasService.save(respostas1);
-
-            if(conformidade == 3){
-                formularioReprovarSoc = true;
-            }else{
-                if(conformidade == 2){
-                    existeMedioSoc++;
-                }
-            }
-        }
-
-        //        Nota Social
-        if(formularioReprovarSoc){
-            certificados.setNota_soc(3L);
-        }else{
-            if (existeMedioSoc > 1){
-                certificados.setNota_soc(2L);
-            }else{
-                certificados.setNota_soc(1L);
-            }
-        }
-
-//        Aprovação de Certificado
-        if(formularioReprovarGov || formularioReprovarAmb || formularioReprovarSoc){
-            certificados.setAprovado(false);
-        }else{
-            certificados.setAprovado(existeMedioGov <= 1 || existeMedioAmb <= 1 || existeMedioSoc <= 1);
-        }
-
-        certificados.setFormulario(formularioService.getFormularioById(id));
-        certificadosService.save(certificados);
-
-
-
-        return "formularios/list";
     }
 
     public static String formatCNPJ(String cnpj) {

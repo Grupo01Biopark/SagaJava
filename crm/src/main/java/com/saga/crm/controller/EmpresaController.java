@@ -13,10 +13,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Controller
+@RestController
+@RequestMapping("/empresas")
+@CrossOrigin(origins = "*")
 public class EmpresaController {
 
     private final EmpresaService empresaService;
@@ -30,84 +33,100 @@ public class EmpresaController {
         this.setorService = setorService;
     }
 
-    @GetMapping("/empresas")
-    public String empresasForm(Model model) {
-        List<Porte> portes = porteService.getAllPortes();
-        List<Setor> setores = setorService.getAllSetores();
-
-        model.addAttribute("empresa", new Empresa());
-        model.addAttribute("portes", portes);
-        model.addAttribute("setores", setores);
-        return "empresas/index";
-    }
-
-    @PostMapping("/empresas/adicionar")
-    public String adicionarEmpresa(Empresa empresa) {
-        empresaService.cadastrarEmpresa(empresa);
-        return "redirect:/empresas";
-    }
-
-    @GetMapping("/verificarCnpj")
-    public ResponseEntity<Boolean> verificarCnpj(@RequestParam String cnpj) {
-        boolean cnpjCadastrado = empresaService.cnpjJaCadastrado(cnpj);
-        return ResponseEntity.ok(cnpjCadastrado);
-    }
-
-    @GetMapping("/empresas/listar")
-    public String showListaEmpresa(Model model) {
+    @GetMapping("/listar")
+    public ResponseEntity<Map<String, Object>> getEmpresasData() {
         List<Empresa> empresas = empresaService.getAllEmpresas();
         List<Porte> portes = porteService.getAllPortes();
         List<Setor> setores = setorService.getAllSetores();
 
-        model.addAttribute("empresas", empresas);
-        model.addAttribute("portes", portes);
-        model.addAttribute("setores", setores);
-        return "empresas/list";
+        Map<String, Object> response = new HashMap<>();
+        response.put("empresas", empresas);
+        response.put("portes", portes);
+        response.put("setores", setores);
+
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/empresas/editar/{id}")
-    public String editarEmpresa(@PathVariable Long id, Model model) {
-        Empresa empresa = empresaService.getEmpresaById(id);
-        List<Porte> portes = porteService.getAllPortes();
-        List<Setor> setores = setorService.getAllSetores();
+    @PostMapping("/adicionar")
+    public ResponseEntity<Map<String, Object>> adicionarEmpresa(@RequestBody Empresa empresa) {
+        try {
+            empresaService.cadastrarEmpresa(empresa);
+            Map<String, Object> response = new HashMap<>();
 
-        model.addAttribute("empresa", empresa);
-        model.addAttribute("portes", portes);
-        model.addAttribute("setores", setores);
-        return "empresas/editar";
+            response.put("success", true);
+            response.put("message", "Empresa adicionada com sucesso");
+            response.put("data", Map.of(
+                    "id", empresa.getId(),
+                    "titulo", empresa.getNomeFantasia()
+            ));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao adicionar empresa");
+            errorResponse.put("error", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
-    @PostMapping("/empresas/editar/{id}")
-    public String submitEditarEmpresaForm(@PathVariable Long id, Empresa empresa) {
-        empresa.setId(id);
-        empresaService.editarEmpresa(empresa);
-        return "redirect:/empresas/listar";
+    @GetMapping("/verificarCnpj")
+    public ResponseEntity<?> verificarCnpj(@RequestParam String cnpj) {
+        try {
+            boolean cnpjCadastrado = empresaService.cnpjJaCadastrado(cnpj);
+            return ResponseEntity.ok(cnpjCadastrado);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao verificar CNPJ: " + e.getMessage());
+        }
     }
 
-    @PostMapping("/empresas/excluir/{id}")
-    public String excluirEmpresa(@PathVariable Long id) {
-        empresaService.excluirEmpresa(id);
-        return "redirect:/empresas/listar";
+    @PostMapping("/editar/{id}")
+    public ResponseEntity<?> editarEmpresa(@PathVariable Long id, @RequestBody Empresa empresa) {
+        try {
+            empresa.setId(id);
+            empresaService.editarEmpresa(empresa);
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("success", true);
+            response.put("message", "Empresa editada com sucesso");
+            response.put("data", Map.of(
+                    "id", empresa.getId(),
+                    "titulo", empresa.getNomeFantasia()
+            ));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao editar empresa");
+            errorResponse.put("error", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
-    @GetMapping("/empresas/porte")
-    public ResponseEntity<Map<String, Long>> getEmpresasPorPorte() {
-        Map<String, Long> empresasPorPorte = empresaService.getEmpresasPorPorte();
-        return ResponseEntity.ok(empresasPorPorte);
-    }
-    @GetMapping("/empresas/setor")
-    public ResponseEntity<Map<String, Long>> getEmpresasPorSetor() {
-        Map<String, Long> empresasPorSetor = empresaService.getEmpresasPorSetor();
-        return ResponseEntity.ok(empresasPorSetor);
-    }
-    @GetMapping("/empresas/total")
-    public ResponseEntity<Long> getTotalEmpresas() {
-        long totalEmpresas = empresaService.getAllEmpresas().size();
-        return ResponseEntity.ok(totalEmpresas);
-    }
-    @GetMapping("/empresas/mes")
-    public ResponseEntity<List<Object[]>> getParecerEmpresasPorMes() {
-        List<Object[]> parecer = empresaService.countEmpresasByDataCadastro();
-        return ResponseEntity.ok(parecer);
+    @DeleteMapping("/excluir/{id}")
+    public ResponseEntity<?> excluirEmpresa(@PathVariable Long id) {
+        try {
+            empresaService.excluirEmpresa(id);
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("success", true);
+            response.put("message", "Empresa excluida com sucesso");
+            response.put("data", Map.of(
+                    "id", id
+            ));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erro ao excluir empresa");
+            errorResponse.put("error", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }

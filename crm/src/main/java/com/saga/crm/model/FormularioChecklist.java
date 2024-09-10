@@ -1,5 +1,6 @@
 package com.saga.crm.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -13,6 +14,7 @@ public class FormularioChecklist {
     private Long id;
 
     @ManyToOne
+    @JsonBackReference
     private Formulario formulario;
 
     @ManyToOne

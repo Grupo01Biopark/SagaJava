@@ -1,5 +1,6 @@
 package com.saga.crm.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.Objects;
@@ -15,6 +16,7 @@ public class Formulario {
     private String descricao;
 
     @OneToMany(mappedBy = "formulario")
+    @JsonManagedReference
     private Set<FormularioChecklist> formularioChecklists;
 
     @OneToMany(mappedBy = "formulario")

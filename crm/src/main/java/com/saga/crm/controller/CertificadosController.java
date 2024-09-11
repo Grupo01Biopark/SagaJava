@@ -4,51 +4,75 @@ import com.saga.crm.model.Certificados;
 import com.saga.crm.model.Checklist;
 import com.saga.crm.service.CertificadosService;
 import com.saga.crm.service.ChecklistService;
+import com.saga.crm.service.EmpresaService;
+import com.saga.crm.service.FormularioService;
 import jakarta.servlet.http.HttpServletResponse;
 import com.itextpdf.html2pdf.HtmlConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-@Controller
+@RestController
+@RequestMapping("/certificados")
+@CrossOrigin(origins = "*")
 public class CertificadosController {
 
     private final CertificadosService certificadosService;
     private final ChecklistService checklistService;
+    private final EmpresaService empresaService;
+    private final FormularioService formularioService;
 
     @Autowired
     private SpringTemplateEngine templateEngine;
 
     @Autowired
-    public CertificadosController(CertificadosService certificadosService, ChecklistService checklistService){
+    public CertificadosController(CertificadosService certificadosService, ChecklistService checklistService, EmpresaService empresaService, FormularioService formularioService){
         this.certificadosService = certificadosService;
         this.checklistService = checklistService;
+        this.empresaService = empresaService;
+        this.formularioService = formularioService;
     }
 
-    @GetMapping("/certificados/index")
-    public String certificadosIndex(Model model){
+    @GetMapping("/teste")
+    public ResponseEntity<Map<String, Object>> certificadosIndex(){
 
-        List<Certificados> certificados = certificadosService.getAllCertificados();
+        List<Map<String, Object>> certificados = certificadosService.getAllCertificados().stream().map(
+                certificado -> {
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", certificado.getId());
+            response.put("aprovado", certificado.isAprovado());
+            response.put("nota_gov", certificado.getNota_gov());
+            response.put("nota_amb", certificado.getNota_amb());
+            response.put("nota_soc", certificado.getNota_soc());
+            response.put("date", certificado.getData());
+            response.put("empresa", certificado.getEmpresa().getId());
+            response.put("nomeEmpresa", certificado.getEmpresa().getNomeFantasia());
+            response.put("formulario", certificado.getFormulario().getId());
+            response.put("tituloFormulario", certificado.getFormulario().getTitulo());
+            return response;
+        }).collect(Collectors.toList());
 
-        model.addAttribute("certificados", certificados);
+        Map<String, Object> response = new HashMap<>();
+        response.put("certificados", certificados);
 
-
-        return "certificados/index";
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/certificados/{id}/emitir")
+    @GetMapping("/{id}/emitir")
     @ResponseBody
-    public void emitirCertificado(@PathVariable Long id, HttpServletResponse response) throws IOException {
+    public ResponseEntity<String> emitirCertificado(@PathVariable Long id, HttpServletResponse response) throws IOException {
         Certificados certificado = certificadosService.findById(id);
 
         Long formularioId = certificado.getFormulario().getId();
@@ -72,7 +96,7 @@ public class CertificadosController {
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=certificado.pdf");
         response.getOutputStream().write(target.toByteArray());
+
+        return ResponseEntity.ok("teste");
     }
-
-
 }

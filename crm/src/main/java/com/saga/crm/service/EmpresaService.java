@@ -43,7 +43,7 @@ public class EmpresaService {
     }
 
     public void excluirEmpresa(Long id) {
-        empresaRepository.deleteById(id);
+        empresaRepository.deactivateEmpresaById(id);
     }
 
     public boolean cnpjJaCadastrado(String cnpj) {
@@ -60,11 +60,11 @@ public class EmpresaService {
                 empresa.getCep() == null || empresa.getCep().isEmpty() ||
                 empresa.getSetor() == null ||
                 empresa.getPorte() == null) {
-            throw new CamposObrigatoriosException("Todos os campos são obrigatórios.");
+            throw new CamposObrigatoriosException("Todos os campos sao obrigatorios.");
         }
 
         if (!validarCnpj(empresa.getCnpj())) {
-            throw new CNPJInvalidoException("CNPJ inválido.");
+            throw new CNPJInvalidoException("CNPJ invalido.");
         }
 
         if (cnpjJaCadastrado(empresa.getCnpj())) {

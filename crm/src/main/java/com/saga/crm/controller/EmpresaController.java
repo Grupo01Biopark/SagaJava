@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,19 @@ public class EmpresaController {
         this.porteService = porteService;
         this.setorService = setorService;
     }
+    @GetMapping("/listar/{id}")
+    public ResponseEntity<Map<String, Object>> getEmpresasDataById(@PathVariable Long id) {
+        Empresa empresas = empresaService.getEmpresaById(id);
+        List<Porte> portes = porteService.getAllPortes();
+        List<Setor> setores = setorService.getAllSetores();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("empresas", empresas);
+        response.put("portes", portes);
+        response.put("setores", setores);
+
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/listar")
     public ResponseEntity<Map<String, Object>> getEmpresasData() {
@@ -50,6 +64,9 @@ public class EmpresaController {
     @PostMapping("/adicionar")
     public ResponseEntity<Map<String, Object>> adicionarEmpresa(@RequestBody Empresa empresa) {
         try {
+            LocalDate myLocalDate = LocalDate.now();
+            empresa.setDataCadastro(myLocalDate);
+            empresa.setAtiva(true);
             empresaService.cadastrarEmpresa(empresa);
             Map<String, Object> response = new HashMap<>();
 

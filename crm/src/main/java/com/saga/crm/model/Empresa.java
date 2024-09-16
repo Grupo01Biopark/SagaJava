@@ -21,6 +21,7 @@ public class Empresa {
     private String cep;
     private String complemento;
     private LocalDate dataCadastro;
+    private Boolean ativa;
 
     @ManyToOne
     private Porte porte;
@@ -130,5 +131,13 @@ public class Empresa {
 
     public void setDataCadastro(LocalDate dataCadastro) {
         this.dataCadastro = dataCadastro;
+    }
+
+    public Boolean getAtiva() {
+        return ativa;
+    }
+
+    public void setAtiva(Boolean ativa) {
+        this.ativa = ativa;
     }
 }

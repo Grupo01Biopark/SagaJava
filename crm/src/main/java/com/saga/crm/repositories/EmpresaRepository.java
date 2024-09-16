@@ -2,6 +2,7 @@ package com.saga.crm.repositories;
 
 import com.saga.crm.model.Empresa;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
@@ -17,4 +18,7 @@ public interface EmpresaRepository extends JpaRepository<Empresa, Long> {
     @Query("SELECT YEAR(e.dataCadastro), MONTH(e.dataCadastro), COUNT(e) FROM Empresa e GROUP BY YEAR(e.dataCadastro), MONTH(e.dataCadastro)")
     List<Object[]> countEmpresasByDataCadastro();
 
+    @Modifying
+    @Query("UPDATE Empresa e SET e.ativa = false WHERE e.id = :id")
+    void deactivateEmpresaById(Long id);
 }

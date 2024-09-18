@@ -18,9 +18,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/perguntas")
+@CrossOrigin(origins = "*")
 public class PerguntasController {
 
     private final PerguntasService perguntasService;
@@ -43,8 +45,21 @@ public class PerguntasController {
         List<Setor> setores = setorService.getAllSetores();
         List<Porte> portes = porteService.getAllPortes();
 
+        List<Map<String, Object>> peruntasFormat = perguntas.stream()
+                .map(pergunta -> {
+                    Map<String, Object> perguntaMap = new HashMap<>();
+                    perguntaMap.put("id", pergunta.getId());
+                    perguntaMap.put("titulo", pergunta.getTitulo());
+                    perguntaMap.put("descricao", pergunta.getDescricao());
+                    perguntaMap.put("importante", pergunta.getImportante());
+                    perguntaMap.put("eixo", pergunta.getEixo());
+                    perguntaMap.put("porte", pergunta.getPorte());
+                    perguntaMap.put("setor", pergunta.getSetor());
+                    return perguntaMap;
+                }).collect(Collectors.toList());
+
         Map<String, Object> response = new HashMap<>();
-        response.put("perguntas", perguntas);
+        response.put("perguntas", peruntasFormat);
         response.put("eixos", eixos);
         response.put("setores", setores);
         response.put("portes", portes);

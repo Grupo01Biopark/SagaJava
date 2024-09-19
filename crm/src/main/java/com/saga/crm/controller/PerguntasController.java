@@ -55,6 +55,7 @@ public class PerguntasController {
                     perguntaMap.put("eixo", pergunta.getEixo());
                     perguntaMap.put("porte", pergunta.getPorte());
                     perguntaMap.put("setor", pergunta.getSetor());
+                    perguntaMap.put("ativa", pergunta.getAtiva());
                     return perguntaMap;
                 }).collect(Collectors.toList());
 
@@ -65,6 +66,42 @@ public class PerguntasController {
         response.put("portes", portes);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/listar/{id}")
+    public ResponseEntity<Map<String, Object>> listarPerguntasId(@PathVariable Long id) {
+        Perguntas pergunta = perguntasService.getPerguntaById(id);
+
+        if (pergunta != null) {
+            List<Eixo> eixos = eixoService.getAllEixos();
+            List<Setor> setores = setorService.getAllSetores();
+            List<Porte> portes = porteService.getAllPortes();
+
+            Map<String, Object> perguntaMap = new HashMap<>();
+            perguntaMap.put("id", pergunta.getId());
+            perguntaMap.put("titulo", pergunta.getTitulo());
+            perguntaMap.put("descricao", pergunta.getDescricao());
+            perguntaMap.put("importante", pergunta.getImportante());
+            perguntaMap.put("eixo", pergunta.getEixo());
+            perguntaMap.put("porte", pergunta.getPorte());
+            perguntaMap.put("setor", pergunta.getSetor());
+            perguntaMap.put("ativa", pergunta.getAtiva());
+
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("pergunta", perguntaMap);
+            response.put("eixos", eixos);
+            response.put("setores", setores);
+            response.put("portes", portes);
+
+            return ResponseEntity.ok(response);
+        }else {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Pergunta nao encontrada");
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     @PostMapping("/adicionar")
@@ -160,6 +197,7 @@ public class PerguntasController {
             // Atualizar Título e Descrição
             perguntaExistente.setTitulo(pergunta.getTitulo());
             perguntaExistente.setDescricao(pergunta.getDescricao());
+            perguntaExistente.setImportante(pergunta.getImportante());
 
             try {
                 perguntasService.save(perguntaExistente);

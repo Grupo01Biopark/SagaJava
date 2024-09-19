@@ -32,7 +32,7 @@ public class PerguntasService {
     }
 
     public void excluirPergunta(Long id) {
-        perguntasRepository.deleteById(id);
+        perguntasRepository.deactivatePerguntaById(id);
     }
 
     public List<Perguntas> filtrarPerguntas(Long eixoId, Long setorId, Long porteId) {

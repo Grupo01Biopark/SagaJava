@@ -1,6 +1,7 @@
 package com.saga.crm.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.util.List;
 import java.util.Objects;
@@ -16,6 +17,9 @@ public class Perguntas {
     private String descricao;
 
     private Integer importante = 0;
+
+    @Getter
+    private Boolean ativa = true;
 
     @ManyToOne
     private Eixo eixo;
@@ -57,6 +61,10 @@ public class Perguntas {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    public void setAtiva(Boolean ativa) {
+        this.ativa = ativa;
     }
 
     public Long getId() {

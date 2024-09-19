@@ -139,18 +139,27 @@ public class FormularioController {
 
     @GetMapping("/formulario/listar")
     public List<Map<String, Object>> listarFormularios() {
-        return formularioService.getAllFormulario().stream()
-                .map(formulario -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", formulario.getId());
-                    map.put("titulo", formulario.getTitulo());
-                    map.put("descricao", formulario.getDescricao());
-                    return map;
-                })
-                .collect(Collectors.toList());
-    }
+    return formularioService.getAllFormulario().stream()
+            .map(formulario -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", formulario.getId());
+                map.put("titulo", formulario.getTitulo());
+                map.put("descricao", formulario.getDescricao());
+                map.put("checklists", formulario.getFormularioChecklists().stream()
+                        .findFirst()
+                        .map(formularioChecklist -> {
+                            Map<String, Object> checklistMap = new HashMap<>();
+                            checklistMap.put("setor", formularioChecklist.getChecklist().getSetor().getTitulo());
+                            checklistMap.put("porte", formularioChecklist.getChecklist().getPorte().getTitulo());
+                            return checklistMap;
+                        })
+                        .orElse(null));
+                return map;
+            })
+            .collect(Collectors.toList());
+}
 
-    @GetMapping("/formulario/{id}/iniciar")
+    @GetMapping("/formulario/listar/empresas/{id}")
     public Map<String, Object> iniciarFormulario(@PathVariable("id") Long id) {
         Formulario formulario = formularioService.getFormularioById(id);
 
@@ -169,7 +178,6 @@ public class FormularioController {
                 .collect(Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
-        response.put("formularioId", formulario.getId());
         response.put("empresas", empresas);
 
         return response;
@@ -178,85 +186,110 @@ public class FormularioController {
 
 
     @GetMapping("/formulario/{id}/iniciar/respostas/{empresaId}")
-    public String iniciarFormularioRespostas(@PathVariable("id") Long id, Model model, @PathVariable("empresaId") Long empresaId) {
+    public Map<String, Object> iniciarFormularioRespostas(
+            @PathVariable("id") Long id,
+            @PathVariable("empresaId") Long empresaId) {
+
         Formulario formulario = formularioService.getFormularioById(id);
 
-//        Perguntas Governança
-        List<Checklist> governancaChecklistList = checklistService.getChecklistByFormularioIdAndEixo(id, 2);
-
-        Checklist governancaChecklist = null;
-        if (!governancaChecklistList.isEmpty()) {
-            governancaChecklist = governancaChecklistList.get(0);
+        if (formulario == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Formulário não encontrado");
         }
+
+        // Criação da resposta
+        Map<String, Object> response = new HashMap<>();
+
+        // Governança
+        List<Checklist> governancaChecklistList = checklistService.getChecklistByFormularioIdAndEixo(id, 2);
+        Checklist governancaChecklist = governancaChecklistList.isEmpty() ? null : governancaChecklistList.get(0);
+
         if (governancaChecklist != null) {
             Long governancaChecklistId = governancaChecklist.getId();
             List<Perguntas> governancaPerguntas = checklistService.getChecklistPerguntasById(governancaChecklistId);
-
             FormularioChecklist formularioChecklistGovernanca = formularioChecklistService.findByFormularioAndChecklist(id, governancaChecklistId);
 
-            System.out.println("FormularioChecklist: " + formularioChecklistGovernanca.getId());
-
-            model.addAttribute("formularioChecklistGovernanca", formularioChecklistGovernanca.getId());
-            model.addAttribute("govPerguntas", governancaPerguntas);
+            // Criação do mapa de Governança
+            Map<String, Object> governancaMap = new HashMap<>();
+            governancaMap.put("formularioChecklistId", formularioChecklistGovernanca.getId());
+            governancaMap.put("perguntas", governancaPerguntas.stream()
+                    .map(pergunta -> {
+                        Map<String, Object> perguntaMap = new HashMap<>();
+                        perguntaMap.put("id", pergunta.getId());
+                        perguntaMap.put("pergunta", pergunta.getTitulo());
+                        perguntaMap.put("descricao", pergunta.getDescricao());
+                        return perguntaMap;
+                    })
+                    .collect(Collectors.toList())
+            );
+            response.put("governanca", governancaMap);
         }
 
-
-//        Perguntas Ambiental
+        // Ambiental
         List<Checklist> ambientalChecklistList = checklistService.getChecklistByFormularioIdAndEixo(id, 1);
+        Checklist ambientalChecklist = ambientalChecklistList.isEmpty() ? null : ambientalChecklistList.get(0);
 
-
-        Checklist ambientalChecklist = null;
-        if (!ambientalChecklistList.isEmpty()) {
-            ambientalChecklist = ambientalChecklistList.get(0);
-        }
         if (ambientalChecklist != null) {
             Long ambientalChecklistId = ambientalChecklist.getId();
             List<Perguntas> ambientalPerguntas = checklistService.getChecklistPerguntasById(ambientalChecklistId);
+            FormularioChecklist formularioChecklistAmbiental = formularioChecklistService.findByFormularioAndChecklist(id, ambientalChecklistId);
 
-            FormularioChecklist formularioChecklistAmbiental= formularioChecklistService.findByFormularioAndChecklist(id, ambientalChecklistId);
-
-            System.out.println("FormularioChecklist: " + formularioChecklistAmbiental.getId());
-
-            model.addAttribute("formularioChecklistAmbiental", formularioChecklistAmbiental.getId());
-            model.addAttribute("ambPerguntas", ambientalPerguntas);
+            // Criação do mapa de Ambiental
+            Map<String, Object> ambientalMap = new HashMap<>();
+            ambientalMap.put("formularioChecklistId", formularioChecklistAmbiental.getId());
+            ambientalMap.put("perguntas", ambientalPerguntas.stream()
+                    .map(pergunta -> {
+                        Map<String, Object> perguntaMap = new HashMap<>();
+                        perguntaMap.put("id", pergunta.getId());
+                        perguntaMap.put("pergunta", pergunta.getTitulo());
+                        perguntaMap.put("descricao", pergunta.getDescricao());
+                        return perguntaMap;
+                    })
+                    .collect(Collectors.toList())
+            );
+            response.put("ambiental", ambientalMap);
         }
 
-//        Perguntas Social
+        // Social
         List<Checklist> socialChecklistList = checklistService.getChecklistByFormularioIdAndEixo(id, 3);
+        Checklist socialChecklist = socialChecklistList.isEmpty() ? null : socialChecklistList.get(0);
 
-        Checklist socialChecklist = null;
-        if (!socialChecklistList.isEmpty()) {
-            socialChecklist = socialChecklistList.get(0);
-        }
         if (socialChecklist != null) {
             Long socialChecklistId = socialChecklist.getId();
             List<Perguntas> socialPerguntas = checklistService.getChecklistPerguntasById(socialChecklistId);
-
             FormularioChecklist formularioChecklistSocial = formularioChecklistService.findByFormularioAndChecklist(id, socialChecklistId);
 
-            System.out.println("FormularioChecklist: " + formularioChecklistSocial.getId());
-
-            model.addAttribute("formularioChecklistSocial", formularioChecklistSocial.getId());
-            model.addAttribute("socPerguntas", socialPerguntas);
+            // Criação do mapa de Social
+            Map<String, Object> socialMap = new HashMap<>();
+            socialMap.put("formularioChecklistId", formularioChecklistSocial.getId());
+            socialMap.put("perguntas", socialPerguntas.stream()
+                    .map(pergunta -> {
+                        Map<String, Object> perguntaMap = new HashMap<>();
+                        perguntaMap.put("id", pergunta.getId());
+                        perguntaMap.put("pergunta", pergunta.getTitulo());
+                        perguntaMap.put("descricao", pergunta.getDescricao());
+                        return perguntaMap;
+                    })
+                    .collect(Collectors.toList())
+            );
+            response.put("social", socialMap);
         }
 
-        model.addAttribute("empresaId", empresaId);
-        model.addAttribute("formulario", formulario);
+        // Adicionando informações da empresa e do formulário à resposta
+        response.put("empresaId", empresaId);
+        response.put("formulario", Map.of(
+                "id", formulario.getId(),
+                "nome", formulario.getTitulo()
+        ));
 
-
-
-        return "formularios/respostas";
+        return response;
     }
 
     @PostMapping("/formulario/{id}/iniciar/respostas/{empresaId}/salvar")
-    public ResponseEntity<Map<String, Object>> salvarRespostas(
-            @PathVariable("id") Long id,
-            @PathVariable("empresaId") Long empresaId,
-            @RequestBody Map<String, Object> requestBody) {
+    public ResponseEntity<Map<String, Object>> salvarRespostas(@PathVariable("id") Long id, @PathVariable("empresaId") Long empresaId, @RequestBody Map<String, Object> requestBody) {
 
         try {
             List<Map<String, Object>> respostas = (List<Map<String, Object>>) requestBody.get("respostas");
-
+            System.out.println(respostas);
             // Extrair e processar respostas
             Map<String, Object> respostaGovObj = respostas.get(0);
             List<Map<String, Object>> respostasGov = (List<Map<String, Object>>) respostaGovObj.get("respostasGov");
@@ -302,6 +335,8 @@ public class FormularioController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "Erro ao salvar respostas");
+            System.out.println(e.getMessage());
+//            System.out.println(e.getMessage());
             errorResponse.put("error", e.getMessage());
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);

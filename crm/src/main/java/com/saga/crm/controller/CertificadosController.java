@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/certificados")
+@RequestMapping("/certificado")
 @CrossOrigin(origins = "*")
 public class CertificadosController {
 
@@ -45,14 +45,14 @@ public class CertificadosController {
         this.formularioService = formularioService;
     }
 
-    @GetMapping("/teste")
+    @GetMapping("/listar")
     public ResponseEntity<Map<String, Object>> certificadosIndex(){
 
         List<Map<String, Object>> certificados = certificadosService.getAllCertificados().stream().map(
                 certificado -> {
             Map<String, Object> response = new HashMap<>();
             response.put("id", certificado.getId());
-            response.put("aprovado", certificado.isAprovado());
+            response.put("status", certificado.isAprovado());
             response.put("nota_gov", certificado.getNota_gov());
             response.put("nota_amb", certificado.getNota_amb());
             response.put("nota_soc", certificado.getNota_soc());

@@ -51,7 +51,7 @@ public class FormularioController {
                     return checklistMap;
                 }).collect(Collectors.toList());
 
-        List<Map<String, Object>> governancaChecklists = checklistService.getChecklistByEixo(2).stream()
+        List<Map<String, Object>> governancaChecklists = checklistService.getChecklistByEixo(3).stream()
                 .map(checklist -> {
                     Map<String, Object> checklistMap = new HashMap<>();
                     checklistMap.put("id", checklist.getId());
@@ -60,7 +60,7 @@ public class FormularioController {
                     return checklistMap;
                 }).collect(Collectors.toList());
 
-        List<Map<String, Object>> socialChecklists = checklistService.getChecklistByEixo(3).stream()
+        List<Map<String, Object>> socialChecklists = checklistService.getChecklistByEixo(2).stream()
                 .map(checklist -> {
                     Map<String, Object> checklistMap = new HashMap<>();
                     checklistMap.put("id", checklist.getId());

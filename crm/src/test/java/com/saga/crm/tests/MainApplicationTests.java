@@ -6,6 +6,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.text.Normalizer;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -87,7 +89,7 @@ public class MainApplicationTests {
 
         long idCertificado = 12L;
         Boolean aprovado = true;
-        Date data = new Date();
+        LocalDateTime data = LocalDateTime.now();
         long notaGov = 1L;
         long notaAmb = 1L;
         long notaSoc = 1L;

@@ -2,6 +2,8 @@ package com.saga.crm.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Set;
@@ -16,8 +18,8 @@ public class Certificados {
     private Long nota_gov;
     private Long nota_amb;
     private Long nota_soc;
-    @Temporal(TemporalType.DATE)
-    private Date data;
+    //@Temporal(TemporalType.DATE)
+    private LocalDateTime data;
 
     @ManyToOne
     private Empresa empresa;
@@ -39,7 +41,7 @@ public class Certificados {
         return Objects.hash(id);
     }
 
-    public Certificados(Long id, boolean aprovado, Date data, Empresa empresa, Long nota_gov, Long nota_amb, Long nota_soc, Formulario formulario) {
+    public Certificados(Long id, boolean aprovado, LocalDateTime data, Empresa empresa, Long nota_gov, Long nota_amb, Long nota_soc, Formulario formulario) {
         this.id = id;
         this.aprovado = aprovado;
         this.data = data;
@@ -70,11 +72,11 @@ public class Certificados {
         this.aprovado = aprovado;
     }
 
-    public Date getData() {
+    public LocalDateTime getData() {
         return data;
     }
 
-    public void setData(Date data) {
+    public void setData(LocalDateTime data) {
         this.data = data;
     }
 

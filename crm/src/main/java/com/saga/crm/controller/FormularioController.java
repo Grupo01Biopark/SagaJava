@@ -10,6 +10,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -304,7 +306,8 @@ public class FormularioController {
             Integer formularioChecklistIdSoc = Integer.parseInt((String) respostaSocObj.get("idFormularioChecklistSoc"));
 
             Certificados certificados = new Certificados();
-            certificados.setData(new Date());
+            LocalDateTime localDate = LocalDateTime.now();
+            certificados.setData(localDate);
             certificados.setEmpresa(empresaService.getEmpresaById(empresaId));
 
             // Processar respostas e calcular notas

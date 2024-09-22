@@ -19,6 +19,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class CertificadosController {
 
     @GetMapping("/listar")
     public ResponseEntity<Map<String, Object>> certificadosIndex(){
-
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         List<Map<String, Object>> certificados = certificadosService.getAllCertificados().stream().map(
                 certificado -> {
             Map<String, Object> response = new HashMap<>();
@@ -56,7 +57,7 @@ public class CertificadosController {
             response.put("nota_gov", certificado.getNota_gov());
             response.put("nota_amb", certificado.getNota_amb());
             response.put("nota_soc", certificado.getNota_soc());
-            response.put("date", certificado.getData());
+            response.put("date", certificado.getData().format(formatter));
             response.put("empresa", certificado.getEmpresa().getId());
             response.put("nomeEmpresa", certificado.getEmpresa().getNomeFantasia());
             response.put("formulario", certificado.getFormulario().getId());

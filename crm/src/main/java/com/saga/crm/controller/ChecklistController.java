@@ -1,20 +1,16 @@
 package com.saga.crm.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saga.crm.model.*;
 import com.saga.crm.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/checklists")
@@ -45,8 +41,22 @@ public class ChecklistController {
         List<Setor> setores = setorService.getAllSetores();
         List<Porte> portes = porteService.getAllPortes();
 
+        List<Map<String, Object>> checklistsFormat = checklists.stream()
+                .map(checklist -> {
+                    Map<String, Object> checklistMap = new HashMap<>();
+                    checklistMap.put("id", checklist.getId());
+                    checklistMap.put("titulo", checklist.getTitulo());
+                    checklistMap.put("descricao", checklist.getDescricao());
+                    checklistMap.put("eixo", checklist.getEixo());
+                    checklistMap.put("setor", checklist.getSetor());
+                    checklistMap.put("porte", checklist.getPorte());
+                    checklistMap.put("quantidadePerguntas", checklist.getQuantidadePerguntas());
+                    checklistMap.put("ativa", checklist.getStatus() == 1);
+                    return checklistMap;
+                }).collect(Collectors.toList());
+
         Map<String, Object> response = new HashMap<>();
-        response.put("checklists", checklists);
+        response.put("checklists", checklistsFormat);
         response.put("eixos", eixos);
         response.put("setores", setores);
         response.put("portes", portes);
@@ -72,31 +82,19 @@ public class ChecklistController {
             checklist.setPorte(porteService.getPorteById(idPorte));
             checklistService.save(checklist);
 
-            Integer quantidadePerguntas = 0;
             for (Integer idPergunta : idPerguntas) {
                 Perguntas pergunta = perguntasService.getPerguntaById(idPergunta.longValue());
                 ChecklistPerguntas checklistPerguntas = new ChecklistPerguntas();
                 checklistPerguntas.setChecklist(checklist);
                 checklistPerguntas.setPerguntas(pergunta);
                 checklistPerguntasService.save(checklistPerguntas);
-                quantidadePerguntas++;
             }
-
-            checklist.setQuantidadePerguntas(quantidadePerguntas);
-            checklistService.save(checklist);
 
             return ResponseEntity.ok("Checklist criado com sucesso!");
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Erro ao criar o checklist: " + e.getMessage());
         }
-    }
-
-
-    @GetMapping("/filtrar-perguntas")
-    public ResponseEntity<List<Object[]>> filtrarPerguntas(@PathVariable Long id) {
-        List<Object[]> perguntasArray = checklistPerguntasService.perguntasByChecklist(id);
-        return ResponseEntity.ok(perguntasArray);
     }
 
     @GetMapping("/listar")
@@ -106,14 +104,31 @@ public class ChecklistController {
         List<Setor> setores = setorService.getAllSetores();
         List<Porte> portes = porteService.getAllPortes();
 
+        List<Map<String, Object>> checklistsFormat = checklists.stream()
+                .map(checklist -> {
+                    Map<String, Object> checklistMap = new HashMap<>();
+                    checklistMap.put("id", checklist.getId());
+                    checklistMap.put("titulo", checklist.getTitulo());
+                    checklistMap.put("descricao", checklist.getDescricao());
+                    checklistMap.put("eixo", checklist.getEixo());
+                    checklistMap.put("setor", checklist.getSetor());
+                    checklistMap.put("porte", checklist.getPorte());
+                    checklistMap.put("quantidadePerguntas", checklist.getQuantidadePerguntas());
+                    checklistMap.put("ativa", checklist.getStatus() == 1);
+                    return checklistMap;
+                }).collect(Collectors.toList());
+
         Map<String, Object> response = new HashMap<>();
-        response.put("checklists", checklists);
+        response.put("checklists", checklistsFormat);
         response.put("eixos", eixos);
         response.put("setores", setores);
         response.put("portes", portes);
 
+        System.out.println(response);
+
         return ResponseEntity.ok(response);
     }
+
 
     @PostMapping("/inativar/{id}")
     public ResponseEntity<Map<String, Object>> inativarChecklist(@PathVariable Long id) {
@@ -137,7 +152,6 @@ public class ChecklistController {
         }
     }
 
-
     @GetMapping("/{id}/perguntas")
     public ResponseEntity<List<Object[]>> getPerguntasByChecklistId(@PathVariable Long id) {
         List<Object[]> perguntasArray = checklistPerguntasService.perguntasByChecklist(id);
@@ -154,7 +168,6 @@ public class ChecklistController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
-
 
     @PutMapping("/editar/{id}")
     public ResponseEntity<Map<String, Object>> editarChecklist(@PathVariable Long id, @RequestBody Checklist checklistAtualizado) {
@@ -180,5 +193,4 @@ public class ChecklistController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
     }
-
 }

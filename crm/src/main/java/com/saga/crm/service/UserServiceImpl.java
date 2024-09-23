@@ -1,24 +1,25 @@
 package com.saga.crm.service;
 
-import com.saga.crm.dto.UserDto;
-import com.saga.crm.model.User;
-import com.saga.crm.model.Role;
-import com.saga.crm.repositories.RoleRepository;
-import com.saga.crm.repositories.UserRepository;
-import com.saga.crm.service.UserService;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.saga.crm.dto.UserDto;
+import com.saga.crm.model.Role;
+import com.saga.crm.model.User;
+import com.saga.crm.repositories.RoleRepository;
+import com.saga.crm.repositories.UserRepository;
 
 @Service
 public class UserServiceImpl implements UserService {
 
-    private UserRepository userRepository;
-    private RoleRepository roleRepository;
-    private PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
@@ -29,16 +30,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public void saveUser(User user) {
+        userRepository.save(user);
+    }
+
+    @Override
     public void saveUser(UserDto userDto) {
         User user = new User();
-        user.setName(userDto.getFirstName() + " " + userDto.getLastName());
+        user.setName(userDto.getName());
         user.setEmail(userDto.getEmail());
-        // encrypt the password using spring security
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
         Role role = roleRepository.findByName("ROLE_ADMIN");
-        if(role == null){
-            role = checkRoleExist();
+        if (role == null) {
+            role = createRole("ROLE_ADMIN");
         }
         user.setRoles(Arrays.asList(role));
         userRepository.save(user);
@@ -51,34 +56,31 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> findAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream()
-                .map((user) -> mapToUserDto(user))
+        return userRepository.findAll().stream()
+                .map(this::mapToUserDto)
                 .collect(Collectors.toList());
     }
 
-    private UserDto mapToUserDto(User user){
+    private UserDto mapToUserDto(User user) {
         UserDto userDto = new UserDto();
-        String[] str = user.getName().split(" ");
-        userDto.setFirstName(str[0]);
-        userDto.setLastName(str[1]);
+        userDto.setName(user.getName());
         userDto.setEmail(user.getEmail());
         return userDto;
     }
 
-    private Role checkRoleExist(){
+    private Role createRole(String roleName) {
         Role role = new Role();
-        role.setName("ROLE_ADMIN");
+        role.setName(roleName);
         return roleRepository.save(role);
     }
 
     @Override
     public void deleteUser(Long userId) {
-        User user = userRepository.findById(userId).orElse(null);
-        if (user != null) {
-            user.getRoles().clear();
-            userRepository.save(user);
-            userRepository.delete(user);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isPresent()) {
+            userRepository.delete(userOptional.get());
+        } else {
+            throw new IllegalArgumentException("Usuário não encontrado");
         }
     }
 
@@ -86,23 +88,44 @@ public class UserServiceImpl implements UserService {
     public void updateUserProfile(UserDto userDto) {
         User user = userRepository.findByEmail(userDto.getEmail());
         if (user != null) {
-            user.setName(userDto.getFirstName() + " " + userDto.getLastName());
-            user.setEmail(userDto.getEmail());
+            user.setName(userDto.getName());
             userRepository.save(user);
+        } else {
+            throw new IllegalArgumentException("Usuário não encontrado");
         }
     }
 
     @Override
     public void updatePassword(String email, String newPassword) {
-        User user = userRepository.findByEmail(email);
-        if (user != null) {
-            user.setPassword(passwordEncoder.encode(newPassword)); // Encriptar nova senha
+        Optional<User> userOptional = Optional.ofNullable(userRepository.findByEmail(email));
+        userOptional.ifPresent(user -> {
+            user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
-        }
+        });
     }
 
     @Override
     public boolean isPasswordMatches(User user, String currentPassword) {
         return passwordEncoder.matches(currentPassword, user.getPassword());
+    }
+
+    @Override
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    public boolean emailJaCadastrado(String email) {
+        return userRepository.findByEmail(email) != null;
+    }
+
+    @Override
+    public void editUser(User user) {
+        userRepository.save(user);
     }
 }

@@ -27,17 +27,17 @@ public class User {
 
     @NotNull
     @Email
-    @Size(max = 255) // Limitar o tamanho do email
+    @Size(max = 255)
     private String email;
 
     @NotNull
-    @Size(min = 6) // Tamanho mínimo da senha
-    private String password; // Considere usar hashing para a senha
+    @Size(min = 6)
+    private String password;
 
     private LocalDate dataCadastro;
     private boolean ativo;
 
-    @ManyToMany(fetch = FetchType.LAZY) // Use LAZY para evitar carregamento desnecessário
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -45,10 +45,10 @@ public class User {
     )
     private List<Role> roles;
 
-    // Construtor padrão
+
     public User() {}
 
-    // Getters e Setters
+
     public Long getId() {
         return id;
     }
@@ -124,8 +124,4 @@ public class User {
         return id != null && id.equals(user.id);
     }
 
-    @Override
-    public int hashCode() {
-        return 31; // Pode ser ajustado para um cálculo de hash mais complexo, se necessário
-    }
 }

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class UserDto {
+
     @NotNull
     @Size(min = 1, max = 100)
     private String name;
@@ -15,20 +16,10 @@ public class UserDto {
     private String email;
 
     @NotNull
-    @Size(min = 6) // Tamanho mínimo recomendado para a senha
+    @Size(min = 6)
     private String password;
 
-    // Construtor padrão
-    public UserDto() {}
-
-    // Construtor com parâmetros (opcional)
-    public UserDto(String name, String email, String password) {
-        this.name = name;
-        this.email = email;
-        this.password = password;
-    }
-
-    // Getters e Setters
+    // Getters and Setters
     public String getName() {
         return name;
     }

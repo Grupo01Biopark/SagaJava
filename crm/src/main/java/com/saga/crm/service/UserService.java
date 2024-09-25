@@ -1,24 +1,36 @@
 package com.saga.crm.service;
 
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-
 import com.saga.crm.dto.UserDto;
 import com.saga.crm.model.User;
+import com.saga.crm.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
 
 @Service
-public interface UserService {
-    void saveUser(User user);
-    void saveUser(UserDto userDto);
-    User findUserByEmail(String email);
-    List<UserDto> findAllUsers();
-    void deleteUser(Long id); 
-    void updateUserProfile(UserDto userDto);
-    void updatePassword(String email, String newPassword);
-    boolean isPasswordMatches(User user, String currentPassword);
-    User getUserById(Long id);
-    List<User> getAllUsers();
-    boolean emailJaCadastrado(String email);
-    void editUser(User user);
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public User registerUser(UserDto userDto) {
+        User newUser = new User();
+        newUser.setName(userDto.getName());
+        newUser.setEmail(userDto.getEmail());
+        newUser.setPassword(passwordEncoder.encode(userDto.getPassword())); // Criptografa a senha
+        newUser.setDataCadastro(LocalDate.now());
+        newUser.setAtivo(true); // O usuário é ativo por padrão
+
+        // Salva o usuário no repositório
+        return userRepository.save(newUser);
+    }
+
+    public User findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 }

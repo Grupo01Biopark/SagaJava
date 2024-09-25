@@ -1,68 +1,52 @@
 package com.saga.crm.controller;
 
+
 import com.saga.crm.dto.UserDto;
 import com.saga.crm.model.User;
 import com.saga.crm.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-@Controller
+@RestController
+@RequestMapping("/api/auth")
+@CrossOrigin(origins = "*")
 public class AuthController {
 
-    private UserService userService;
+    private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthController(UserService userService) {
+    @Autowired
+    public AuthController(UserService userService, PasswordEncoder passwordEncoder) {
         this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    // handler method to handle home page request
-    @GetMapping("/login")
-    public String login(){
-        return "login";
+    @PostMapping("/register")
+    public ResponseEntity<User> register(@Valid @RequestBody UserDto userDto) {
+        User newUser = userService.registerUser(userDto);
+        return ResponseEntity.ok(newUser);
     }
 
-    // handler method to handle user registration form request
-    @GetMapping("/cadastro")
-    public String showRegistrationForm(Model model){
-        // create model object to store form data
-        UserDto user = new UserDto();
-        model.addAttribute("user", user);
-        return "cadastro";
-    }
-
-    // handler method to handle user registration form submit request
-    @PostMapping("/cadastro/save")
-    public String registration(@Valid @ModelAttribute("user") UserDto userDto,
-                               BindingResult result,
-                               Model model){
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, String>> login(@RequestBody UserDto userDto) {
         User existingUser = userService.findUserByEmail(userDto.getEmail());
 
-        if(existingUser != null && existingUser.getEmail() != null && !existingUser.getEmail().isEmpty()){
-            result.rejectValue("email", null,
-                    "Esse email já está cadastrado");
+        if (existingUser != null && passwordEncoder.matches(userDto.getPassword(), existingUser.getPassword())) {
+            Map<String, String> response = new HashMap<>();
+            response.put("name", existingUser.getName());
+            response.put("email", existingUser.getEmail());
+            return ResponseEntity.ok(response);
         }
 
-        if(result.hasErrors()){
-            model.addAttribute("user", userDto);
-            return "/cadastro";
-        }
-
-        userService.saveUser(userDto);
-        return "redirect:/cadastro?success";
-    }
-
-    // handler method to handle list of users
-    @GetMapping("/users")
-    public String users(Model model){
-        List<UserDto> users = userService.findAllUsers();
-        model.addAttribute("users", users);
-        return "users";
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", "Invalid credentials");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 }

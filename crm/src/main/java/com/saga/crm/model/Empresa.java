@@ -20,6 +20,8 @@ public class Empresa {
     private String numero;
     private String cep;
     private String complemento;
+
+    private String email;
     private LocalDate dataCadastro;
     private Boolean ativa;
 
@@ -43,6 +45,15 @@ public class Empresa {
         this.complemento = complemento;
         this.porte = porte;
         this.setor = setor;
+    }
+
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public Long getId() {

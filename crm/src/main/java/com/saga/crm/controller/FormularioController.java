@@ -12,10 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -161,6 +158,78 @@ public class FormularioController {
             .collect(Collectors.toList());
 }
 
+    @GetMapping("/formulario/respostas/{certId}")
+    public Map<String, Object> verRespostas(@PathVariable("certId") Long certId) {
+        Map<String, Object> respostaMap = new HashMap<>();
+        Map<String, Object> formulario = new HashMap<>();
+        List<Map<String, Object>> governancaPerguntas = new ArrayList<>();
+        List<Map<String, Object>> ambientalPerguntas = new ArrayList<>();
+        List<Map<String, Object>> socialPerguntas = new ArrayList<>();
+
+        // Fetch responses based on certId
+        List<Respostas> respostas = respostasService.findByCertificadoId(certId);
+
+        // Log the retrieved respostas for debugging
+        System.out.println("Respostas: " + respostas);
+
+        // Assuming the first response is representative for formulario and empresaId
+        if (!respostas.isEmpty()) {
+            Respostas firstResposta = respostas.get(0);
+            formulario.put("nome", firstResposta.getFormularioChecklists().getFormulario().getTitulo());
+            formulario.put("id", firstResposta.getFormularioChecklists().getFormulario().getId());
+            respostaMap.put("formulario", formulario);
+            respostaMap.put("empresaId", firstResposta.getCertificado().getEmpresa().getId());
+        }
+
+        // Process each response to categorize questions
+        for (Respostas resposta : respostas) {
+            Map<String, Object> perguntaMap = new HashMap<>();
+            perguntaMap.put("pergunta", resposta.getPergunta().getTitulo());
+            perguntaMap.put("id", resposta.getPergunta().getId());
+            perguntaMap.put("descricao", resposta.getPergunta().getDescricao());
+            perguntaMap.put("resposta", resposta.getConformidade());
+            perguntaMap.put("observacao", resposta.getObservacoes());
+
+            // Log each perguntaMap for debugging
+            System.out.println("Pergunta: " + perguntaMap);
+
+            // Categorize based on eixo id
+            if(resposta.getFormularioChecklists().getChecklist().getEixo().getId() == 1) {
+                ambientalPerguntas.add(perguntaMap);
+            } else if (resposta.getFormularioChecklists().getChecklist().getEixo().getId() == 2) {
+                socialPerguntas.add(perguntaMap);
+            } else if (resposta.getFormularioChecklists().getChecklist().getEixo().getId() == 3) {
+                governancaPerguntas.add(perguntaMap);
+            }
+        }
+
+        // Add categorized questions to the response map
+        if (!governancaPerguntas.isEmpty()) {
+            Map<String, Object> governanca = new HashMap<>();
+            governanca.put("formularioChecklistId", respostas.get(0).getFormularioChecklists().getId());
+            governanca.put("perguntas", governancaPerguntas);
+            respostaMap.put("governanca", governanca);
+        }
+
+        if (!ambientalPerguntas.isEmpty()) {
+            Map<String, Object> ambiental = new HashMap<>();
+            ambiental.put("formularioChecklistId", respostas.get(0).getFormularioChecklists().getId());
+            ambiental.put("perguntas", ambientalPerguntas);
+            respostaMap.put("ambiental", ambiental);
+        }
+
+        if (!socialPerguntas.isEmpty()) {
+            Map<String, Object> social = new HashMap<>();
+            social.put("formularioChecklistId", respostas.get(0).getFormularioChecklists().getId());
+            social.put("perguntas", socialPerguntas);
+            respostaMap.put("social", social);
+        }
+
+        // Log the final response map for debugging
+        System.out.println("Resposta Map: " + respostaMap);
+
+        return respostaMap;
+    }
     @GetMapping("/formulario/listar/empresas/{id}")
     public Map<String, Object> iniciarFormulario(@PathVariable("id") Long id) {
         Formulario formulario = formularioService.getFormularioById(id);
@@ -287,11 +356,15 @@ public class FormularioController {
     }
 
     @PostMapping("/formulario/{id}/iniciar/respostas/{empresaId}/salvar")
-    public ResponseEntity<Map<String, Object>> salvarRespostas(@PathVariable("id") Long id, @PathVariable("empresaId") Long empresaId, @RequestBody Map<String, Object> requestBody) {
+    public ResponseEntity<Map<String, Object>> salvarRespostas(
+            @PathVariable("id") Long id,
+            @PathVariable("empresaId") Long empresaId,
+            @RequestBody Map<String, Object> requestBody) {
 
         try {
             List<Map<String, Object>> respostas = (List<Map<String, Object>>) requestBody.get("respostas");
             System.out.println(respostas);
+
             // Extrair e processar respostas
             Map<String, Object> respostaGovObj = respostas.get(0);
             List<Map<String, Object>> respostasGov = (List<Map<String, Object>>) respostaGovObj.get("respostasGov");
@@ -305,15 +378,24 @@ public class FormularioController {
             List<Map<String, Object>> respostasSoc = (List<Map<String, Object>>) respostaSocObj.get("respostasSoc");
             Integer formularioChecklistIdSoc = Integer.parseInt((String) respostaSocObj.get("idFormularioChecklistSoc"));
 
+            // Criar e salvar o certificado
             Certificados certificados = new Certificados();
             LocalDateTime localDate = LocalDateTime.now();
             certificados.setData(localDate);
             certificados.setEmpresa(empresaService.getEmpresaById(empresaId));
+            certificados.setFormulario(formularioService.getFormularioById(id));
+
+            // Salvar o certificado primeiro
+            certificadosService.save(certificados);
+
+            // Obter o id do certificado salvo
+            Long certificadoId = certificados.getId();
+            certificados.setId(certificadoId);
 
             // Processar respostas e calcular notas
-            boolean formularioReprovarGov = processarRespostas(respostasGov, formularioChecklistIdGov);
-            boolean formularioReprovarAmb = processarRespostas(respostasAmb, formularioChecklistIdAmb);
-            boolean formularioReprovarSoc = processarRespostas(respostasSoc, formularioChecklistIdSoc);
+            boolean formularioReprovarGov = processarRespostas(respostasGov, formularioChecklistIdGov, certificados);
+            boolean formularioReprovarAmb = processarRespostas(respostasAmb, formularioChecklistIdAmb, certificados);
+            boolean formularioReprovarSoc = processarRespostas(respostasSoc, formularioChecklistIdSoc, certificados);
 
             // Definir notas
             certificados.setNota_gov(calcularNota(formularioReprovarGov, respostasGov));
@@ -323,7 +405,7 @@ public class FormularioController {
             // Definir aprovação
             certificados.setAprovado(!formularioReprovarGov && !formularioReprovarAmb && !formularioReprovarSoc);
 
-            certificados.setFormulario(formularioService.getFormularioById(id));
+            // Atualizar o certificado com as notas e o status de aprovação
             certificadosService.save(certificados);
 
             // Resposta JSON de sucesso
@@ -339,23 +421,23 @@ public class FormularioController {
             errorResponse.put("success", false);
             errorResponse.put("message", "Erro ao salvar respostas");
             System.out.println(e.getMessage());
-//            System.out.println(e.getMessage());
             errorResponse.put("error", e.getMessage());
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
-    private boolean processarRespostas(List<Map<String, Object>> respostas, Integer formularioChecklistId) {
+
+
+
+    private boolean processarRespostas(List<Map<String, Object>> respostas, Integer formularioChecklistId, Certificados certificado) {
         boolean formularioReprovar = false;
         int existeMedio = 0;
 
         for (Map<String, Object> resposta : respostas) {
             FormularioChecklist formularioChecklist = formularioChecklistService.getFormularioChecklistById(Long.valueOf(formularioChecklistId));
-
             String idPergunta = (String) resposta.get("idPergunta");
             Perguntas pergunta = perguntasService.getPerguntaById(Long.valueOf(idPergunta));
-
             Integer conformidade = Integer.parseInt((String) resposta.get("conformidade"));
             String observacoes = (String) resposta.get("observacoes");
 
@@ -364,6 +446,8 @@ public class FormularioController {
             respostas1.setPergunta(pergunta);
             respostas1.setFormularioChecklists(formularioChecklist);
             respostas1.setObservacoes(observacoes);
+            respostas1.setCertificado(certificado); // Setar o id do certificado nas respostas
+
             respostasService.save(respostas1);
 
             if (conformidade == 3) {
@@ -375,6 +459,7 @@ public class FormularioController {
 
         return formularioReprovar;
     }
+
 
     private Long calcularNota(boolean formularioReprovar, List<Map<String, Object>> respostas) {
         if (formularioReprovar) {

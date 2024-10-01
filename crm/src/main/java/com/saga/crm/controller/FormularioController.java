@@ -157,7 +157,7 @@ public class FormularioController {
                 map.put("id", formulario.getId());
                 map.put("titulo", formulario.getTitulo());
                 map.put("descricao", formulario.getDescricao());
-                map.put("ativo", true);
+                map.put("ativo", formulario.getAtivo());
                 map.put("checklists", formulario.getFormularioChecklists().stream()
                         .findFirst()
                         .map(formularioChecklist -> {
@@ -453,6 +453,35 @@ public class FormularioController {
             errorResponse.put("error", e.getMessage());
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @DeleteMapping("formulario/excluir/{id}")
+    public ResponseEntity<Map<String, Object>> excluirFormulario(@PathVariable Long id) {
+        Formulario formulario = formularioService.getFormularioById(id);
+        if (formulario != null) {
+            try {
+                formularioService.excluirFormulario(formulario.getId());
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Formulário deletado com sucesso");
+                response.put("data", Map.of(
+                        "id", formulario.getId(),
+                        "titulo", formulario.getTitulo()
+                ));
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            } catch (Exception e) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Erro ao deletar formulário");
+                errorResponse.put("error", e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            }
+        } else {
+            Map<String, Object> notFoundResponse = new HashMap<>();
+            notFoundResponse.put("success", false);
+            notFoundResponse.put("message", "Formulário não encontrado");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(notFoundResponse);
         }
     }
 

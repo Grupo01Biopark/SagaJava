@@ -1,15 +1,23 @@
 package com.saga.crm.controller;
 
+import com.itextpdf.html2pdf.HtmlConverter;
 import com.saga.crm.model.*;
 import com.saga.crm.service.*;
+import jakarta.servlet.http.HttpServletResponse;
 import org.hibernate.annotations.Check;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -26,6 +34,11 @@ public class FormularioController {
 
     private final CertificadosService certificadosService;
     private final FormularioChecklistService formularioChecklistService;
+
+    @Autowired
+    private SpringTemplateEngine templateEngine;
+    @Autowired
+    private MailService mailService;
 
     public FormularioController(FormularioService formularioService, ChecklistService checklistService, FormularioChecklistService formularioChecklistService, EmpresaService empresaService, PerguntasService perguntasService, RespostasService respostasService, CertificadosService certificadosService) {
         this.formularioService = formularioService;
@@ -144,6 +157,7 @@ public class FormularioController {
                 map.put("id", formulario.getId());
                 map.put("titulo", formulario.getTitulo());
                 map.put("descricao", formulario.getDescricao());
+                map.put("ativo", true);
                 map.put("checklists", formulario.getFormularioChecklists().stream()
                         .findFirst()
                         .map(formularioChecklist -> {
@@ -408,10 +422,25 @@ public class FormularioController {
             // Atualizar o certificado com as notas e o status de aprovação
             certificadosService.save(certificados);
 
-            // Resposta JSON de sucesso
+            boolean envioEmail;
+
+            if(certificados.isAprovado()){
+                 envioEmail = sendEmailCertificado(certificadoId);
+            }else{
+                envioEmail = false;
+            }
+
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Respostas salvas com sucesso");
+            if(envioEmail){
+                response.put("success", true);
+                response.put("message", "Respostas salvas com sucesso");
+            }else{
+                response.put("success", true);
+                response.put("message", "Respostas salvas com sucesso, email não enviado");
+            }
+
+            // Resposta JSON de sucesso
+
 
             return ResponseEntity.ok(response);
 
@@ -428,7 +457,38 @@ public class FormularioController {
     }
 
 
+    public Boolean sendEmailCertificado(Long id) throws IOException {
+        Certificados certificado = certificadosService.findById(id);
 
+        Long formularioId = certificado.getFormulario().getId();
+
+        List<Checklist> ambientalChecklist = checklistService.getChecklistByFormularioIdAndEixo(formularioId, 1);
+        List<Checklist> governancaChecklist = checklistService.getChecklistByFormularioIdAndEixo(formularioId, 2);
+        List<Checklist> socialChecklist = checklistService.getChecklistByFormularioIdAndEixo(formularioId, 3);
+
+
+        Context context = new Context();
+        context.setVariable("certificado", certificado);
+        context.setVariable("ambientalChecklist", ambientalChecklist);
+        context.setVariable("governancaChecklist", governancaChecklist);
+        context.setVariable("socialChecklist", socialChecklist);
+
+        String html = templateEngine.process("certificados/certificado", context);
+
+        ByteArrayOutputStream target = new ByteArrayOutputStream();
+        HtmlConverter.convertToPdf(new ByteArrayInputStream(html.getBytes()), target);
+
+        try {
+            String toEmail = certificado.getEmpresa().getEmail(); // Get the company's email
+            String companyName = certificado.getEmpresa().getNomeFantasia(); // Get the company's name
+            mailService.sendEmailWithCertificate(toEmail, companyName, target.toByteArray()); // Send the PDF as byte array
+        } catch (Exception e) {
+            // Handle the exception and return an error response if necessary
+            return false;
+        }
+
+        return true;
+    }
 
     private boolean processarRespostas(List<Map<String, Object>> respostas, Integer formularioChecklistId, Certificados certificado) {
         boolean formularioReprovar = false;

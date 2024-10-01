@@ -19,8 +19,8 @@ public class Certificados {
     private Long nota_amb;
     private Long nota_soc;
 
-    @Temporal(TemporalType.DATE)
-    private Date data;
+    //@Temporal(TemporalType.DATE)
+    private LocalDateTime data;
 
     @ManyToOne
     private Empresa empresa;

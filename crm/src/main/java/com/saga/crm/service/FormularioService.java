@@ -24,8 +24,4 @@ public class FormularioService {
     public Formulario getFormularioById(Long id) {
         return formularioRepository.findById(id).orElse(null);
     }
-
-    public void excluirFormulario(Long id) {
-        formularioRepository.deactivateFormularioById(id);
-    }
 }

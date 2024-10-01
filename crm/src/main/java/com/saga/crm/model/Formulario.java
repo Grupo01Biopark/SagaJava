@@ -2,7 +2,6 @@ package com.saga.crm.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.Getter;
 
 import java.util.Objects;
 import java.util.Set;
@@ -15,9 +14,6 @@ public class Formulario {
     private Long id;
     private String titulo;
     private String descricao;
-
-    @Getter
-    private Boolean ativo = true;
 
     @OneToMany(mappedBy = "formulario")
     @JsonManagedReference
@@ -50,14 +46,6 @@ public class Formulario {
     @Override
     public int hashCode() {
         return Objects.hash(id);
-    }
-
-    public Boolean getAtivo() {
-        return ativo;
-    }
-
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
     }
 
     public Long getId() {

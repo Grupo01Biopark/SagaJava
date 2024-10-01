@@ -30,7 +30,6 @@ public class User {
     @Size(max = 255)
     private String email;
 
-    @NotNull
     @Size(min = 6)
     private String password;
 
@@ -44,6 +43,9 @@ public class User {
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private List<Role> roles;
+
+    private boolean tagAlterarSenha;
+
 
 
     public User() {}
@@ -103,6 +105,14 @@ public class User {
 
     public void setRoles(List<Role> roles) {
         this.roles = roles;
+    }
+
+    public boolean isTagAlterarSenha() {
+        return tagAlterarSenha;
+    }
+
+    public void setTagAlterarSenha(boolean tagAlterarSenha) {
+        this.tagAlterarSenha = tagAlterarSenha;
     }
 
     @Override

@@ -1,26 +1,46 @@
 package com.saga.crm.dto;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class UserDto
-{
-    private Long id;
-    @NotEmpty
-    private String firstName;
-    @NotEmpty
-    private String lastName;
-    @NotEmpty(message = "Email should not be empty")
+public class UserDto {
+
+    @NotNull
+    @Size(min = 1, max = 100)
+    private String name;
+
+    @NotNull
     @Email
+    @Size(max = 255)
     private String email;
-    @NotEmpty(message = "Password should not be empty")
+
+    @NotNull
+    @Size(min = 6)
     private String password;
+
+    // Getters and Setters
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
 }

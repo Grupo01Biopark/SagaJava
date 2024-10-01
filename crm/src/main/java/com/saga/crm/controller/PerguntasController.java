@@ -65,6 +65,7 @@ public class PerguntasController {
         response.put("setores", setores);
         response.put("portes", portes);
 
+        System.out.println(response);
         return ResponseEntity.ok(response);
     }
 

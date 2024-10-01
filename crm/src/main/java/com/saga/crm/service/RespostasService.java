@@ -5,6 +5,8 @@ import com.saga.crm.repositories.RespostasRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional
 public class RespostasService {
@@ -16,5 +18,9 @@ public class RespostasService {
 
     public void save(Respostas respostas) {
         respostasRepository.save(respostas);
+    }
+
+    public List<Respostas> findByCertificadoId(Long certId){
+        return respostasRepository.findByCertificadoId(certId);
     }
 }

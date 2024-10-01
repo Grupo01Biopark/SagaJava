@@ -14,7 +14,8 @@ public class Respostas {
     private Integer conformidade;
     private String observacoes;
 
-
+    @ManyToOne
+    private Certificados certificado;
     @ManyToOne
     private Perguntas pergunta;
 
@@ -44,6 +45,14 @@ public class Respostas {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    public Certificados getCertificado() {
+        return certificado;
+    }
+
+    public void setCertificado(Certificados certificado) {
+        this.certificado = certificado;
     }
 
     public Long getId() {

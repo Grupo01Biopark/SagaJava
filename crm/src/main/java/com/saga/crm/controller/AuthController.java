@@ -34,16 +34,27 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@Valid @RequestBody UserDto userDto) {
+    public ResponseEntity<?> register(@Valid @RequestBody UserDto userDto) {
+
+        if (userService.emailJaCadastrado(userDto.getEmail())) {
+            // Retorna um status 409 (CONFLICT) caso o e-mail já esteja em uso
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("O e-mail já está cadastrado.");
+        }
+
+        // Se o e-mail não estiver cadastrado, registra o novo usuário
         User newUser = userService.registerUser(userDto);
 
         try {
+            // Envia e-mail de boas-vindas
             mailService.sendWelcomeEmail(newUser.getEmail(), newUser.getName());
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        // Retorna o novo usuário criado com status 200 (OK)
         return ResponseEntity.ok(newUser);
     }
+
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody UserDto userDto) {

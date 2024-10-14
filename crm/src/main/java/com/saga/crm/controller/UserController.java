@@ -55,14 +55,12 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("success", false, "message", "Usuário não encontrado"));
             }
-            if (userService.emailJaCadastrado(userDto.getEmail()) &&
-                    !user.getEmail().equals(userDto.getEmail())) {
+            if (userService.emailJaCadastrado(userDto.getEmail())) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(Map.of("success", false, "message", "Email já cadastrado"));
+                        .body(Map.of("error", false, "message", "Email já cadastrado"));
             }
             user.setName(userDto.getName());
             user.setEmail(userDto.getEmail());
-            user.setPassword(userDto.getPassword());
             userService.editUser(user);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

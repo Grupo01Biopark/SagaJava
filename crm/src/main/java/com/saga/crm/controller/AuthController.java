@@ -58,6 +58,7 @@ public class AuthController {
                 response.put("tagAlterarSenha", "true");
             }
 
+            System.out.println(response);
             return ResponseEntity.ok(response);
         }
 

@@ -49,7 +49,7 @@ public class UserService {
         return userRepository.save(user);
     }
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        userRepository.deactivateUserById(id);
     }
     public boolean emailJaCadastrado(String email) {
         return userRepository.existsByEmail(email);

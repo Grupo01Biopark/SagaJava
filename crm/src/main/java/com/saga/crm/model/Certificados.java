@@ -22,6 +22,9 @@ public class Certificados {
     //@Temporal(TemporalType.DATE)
     private LocalDateTime data;
 
+    private Double latitude; // Adicionando a latitude
+    private Double longitude;
+
     @ManyToOne
     private Empresa empresa;
 
@@ -55,6 +58,22 @@ public class Certificados {
 
     public Certificados() {
 
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 
     public Long getId() {

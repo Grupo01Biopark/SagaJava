@@ -1,5 +1,6 @@
 package com.saga.crm.controller;
 
+import ch.qos.logback.core.net.SyslogOutputStream;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.saga.crm.model.*;
 import com.saga.crm.service.*;
@@ -376,8 +377,24 @@ public class FormularioController {
             @RequestBody Map<String, Object> requestBody) {
 
         try {
+            Double latitude = 0.0;
+            Double longitude = 0.0;
             List<Map<String, Object>> respostas = (List<Map<String, Object>>) requestBody.get("respostas");
-            System.out.println(respostas);
+
+
+            Map<String, Object> coordenadas = (Map<String, Object>) requestBody.get("coordenadas");
+
+            // Exemplo de como acessar latitude e longitude
+            if (coordenadas != null) {
+                 latitude = (Double) coordenadas.get("latitude");
+                 longitude = (Double) coordenadas.get("longitude");
+
+                // Exibir as coordenadas
+                System.out.println("Latitude: " + latitude);
+                System.out.println("Longitude: " + longitude);
+            } else {
+                System.out.println("Coordenadas não encontradas no requestBody.");
+            }
 
             // Extrair e processar respostas
             Map<String, Object> respostaGovObj = respostas.get(0);
@@ -396,6 +413,8 @@ public class FormularioController {
             Certificados certificados = new Certificados();
             LocalDateTime localDate = LocalDateTime.now();
             certificados.setData(localDate);
+            certificados.setLatitude(latitude);
+            certificados.setLongitude(longitude);
             certificados.setEmpresa(empresaService.getEmpresaById(empresaId));
             certificados.setFormulario(formularioService.getFormularioById(id));
 

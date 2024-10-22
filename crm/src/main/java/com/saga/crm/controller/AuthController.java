@@ -118,6 +118,26 @@ public class AuthController {
     }
 
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@RequestBody UserDto userDto) {
+        User existingUser = userService.findUserByEmail(userDto.getEmail());
+
+        if (existingUser != null) {
+            existingUser.setPassword(passwordEncoder.encode(userDto.getPassword()));
+            existingUser.setTagAlterarSenha(false);
+
+            userService.saveUser(existingUser);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Senha alterada com sucesso.");
+            return ResponseEntity.ok(response);
+        }
+
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", "Usuário não encontrado. Entre em contato com o suporte.");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
     private String generateTemporaryPassword() {
         int length = 10;
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";

@@ -23,9 +23,10 @@ public class UserService {
         User newUser = new User();
         newUser.setName(userDto.getName());
         newUser.setEmail(userDto.getEmail());
-        newUser.setPassword(passwordEncoder.encode(userDto.getPassword())); // Criptografa a senha
+        newUser.setPassword(passwordEncoder.encode(userDto.getPassword()));
         newUser.setDataCadastro(LocalDate.now());
-        newUser.setAtivo(true); // O usuário é ativo por padrão
+        newUser.setTagAlterarSenha(true);
+        newUser.setAtivo(true);
 
         // Salva o usuário no repositório
         return userRepository.save(newUser);

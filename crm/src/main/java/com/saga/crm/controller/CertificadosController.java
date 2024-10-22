@@ -62,6 +62,8 @@ public class CertificadosController {
             response.put("nomeEmpresa", certificado.getEmpresa().getNomeFantasia());
             response.put("formulario", certificado.getFormulario().getId());
             response.put("tituloFormulario", certificado.getFormulario().getTitulo());
+            response.put("latitude", certificado.getLatitude());
+            response.put("longitude", certificado.getLongitude());
             return response;
         }).collect(Collectors.toList());
 

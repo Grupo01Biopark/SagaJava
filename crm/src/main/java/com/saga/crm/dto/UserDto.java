@@ -19,6 +19,9 @@ public class UserDto {
     @Size(min = 6)
     private String password;
 
+
+    private String profileImage;
+
     // Getters and Setters
     public String getName() {
         return name;
@@ -44,5 +47,13 @@ public class UserDto {
         this.password = password;
     }
 
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
 
 }

@@ -7,7 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Base64;
 import java.util.List;
 
 @Service
@@ -28,7 +32,23 @@ public class UserService {
         newUser.setTagAlterarSenha(true);
         newUser.setAtivo(true);
 
-        // Salva o usuário no repositório
+        if (userDto.getProfileImage() != null) {
+            try {
+                byte[] imageBytes = Base64.getDecoder().decode(userDto.getProfileImage());
+                String directoryPath = "src/main/resources/images";
+                File directory = new File(directoryPath);
+                if (!directory.exists()) {
+                    directory.mkdirs();
+                }
+                String imagePath = directoryPath + "/" + userDto.getEmail() + "_profile.png";
+                try (FileOutputStream fos = new FileOutputStream(new File(imagePath))) {
+                    fos.write(imageBytes);
+                }
+                newUser.setProfileImage(imagePath);
+            } catch (IOException e) {
+                throw new RuntimeException("Erro ao salvar a imagem de perfil", e);
+            }
+        }
         return userRepository.save(newUser);
     }
 

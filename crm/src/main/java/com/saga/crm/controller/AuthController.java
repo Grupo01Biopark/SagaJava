@@ -12,8 +12,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,27 +42,24 @@ public class AuthController {
     public ResponseEntity<?> register(@Valid @RequestBody UserDto userDto) {
 
         if (userService.emailJaCadastrado(userDto.getEmail())) {
-            // Retorna um status 409 (CONFLICT) caso o e-mail já esteja em uso
             return ResponseEntity.status(HttpStatus.CONFLICT).body("O e-mail já está cadastrado.");
         }
 
-        // Se o e-mail não estiver cadastrado, registra o novo usuário
         User newUser = userService.registerUser(userDto);
 
+
         try {
-            // Envia e-mail de boas-vindas
             mailService.sendWelcomeEmail(newUser.getEmail(), newUser.getName());
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        // Retorna o novo usuário criado com status 200 (OK)
         return ResponseEntity.ok(newUser);
     }
 
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody UserDto userDto) {
+    public ResponseEntity<Map<String, String>> login(@RequestBody UserDto userDto) throws IOException {
         User existingUser = userService.findUserByEmail(userDto.getEmail());
 
         if (existingUser != null && passwordEncoder.matches(userDto.getPassword(), existingUser.getPassword())) {
@@ -67,6 +69,13 @@ public class AuthController {
 
             if(existingUser.isTagAlterarSenha()) {
                 response.put("tagAlterarSenha", "true");
+            }
+
+            if (existingUser.getProfileImage() != null) {
+                byte[] imageBytes = Files.readAllBytes(Paths.get(existingUser.getProfileImage()));
+                String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+                System.out.println(base64Image);
+                response.put("profileImage", base64Image);
             }
 
             System.out.println(response);

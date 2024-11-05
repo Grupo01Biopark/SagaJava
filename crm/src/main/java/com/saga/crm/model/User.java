@@ -46,6 +46,8 @@ public class User {
 
     private boolean tagAlterarSenha;
 
+    private String profileImage;
+
 
 
     public User() {}
@@ -113,6 +115,14 @@ public class User {
 
     public void setTagAlterarSenha(boolean tagAlterarSenha) {
         this.tagAlterarSenha = tagAlterarSenha;
+    }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
     }
 
     @Override

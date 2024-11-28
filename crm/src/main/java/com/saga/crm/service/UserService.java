@@ -66,9 +66,36 @@ public class UserService {
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
-    public User editUser(User user) {
-        return userRepository.save(user);
+    public User editUser(Long id, UserDto userDto) {
+        User existingUser = userRepository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // Atualizar nome e email
+        existingUser.setName(userDto.getName());
+        existingUser.setEmail(userDto.getEmail());
+
+
+        // Atualizar a imagem de perfil se fornecida
+        if (userDto.getProfileImage() != null) {
+            try {
+                byte[] imageBytes = Base64.getDecoder().decode(userDto.getProfileImage());
+                String directoryPath = "src/main/resources/images";
+                File directory = new File(directoryPath);
+                if (!directory.exists()) {
+                    directory.mkdirs();
+                }
+                String imagePath = directoryPath + "/" + userDto.getEmail() + "_profile.png";
+                try (FileOutputStream fos = new FileOutputStream(new File(imagePath))) {
+                    fos.write(imageBytes);
+                }
+                existingUser.setProfileImage(imagePath);
+            } catch (IOException e) {
+                throw new RuntimeException("Erro ao salvar a imagem de perfil", e);
+            }
+        }
+
+        return userRepository.save(existingUser);
     }
+
     public void deleteUser(Long id) {
         userRepository.deactivateUserById(id);
     }

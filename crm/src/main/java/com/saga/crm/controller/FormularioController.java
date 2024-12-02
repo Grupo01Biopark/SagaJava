@@ -81,7 +81,6 @@ public class FormularioController {
                     checklistMap.put("descricao", checklist.getDescricao());
                     return checklistMap;
                 }).collect(Collectors.toList());
-
         // Montar a resposta JSON
         Map<String, Object> response = new HashMap<>();
         response.put("ambientalChecklists", ambientalChecklists);
@@ -106,13 +105,18 @@ public class FormularioController {
             Formulario formulario = new Formulario();
             formulario.setTitulo(titulo);
             formulario.setDescricao(descricao);
+            formulario.setAtivo(true);
             formularioService.save(formulario);
+
+            System.out.println(formulario);
 
             // Salvar o Formulario de Governança
             FormularioChecklist formularioChecklistGovernanca = new FormularioChecklist();
             formularioChecklistGovernanca.setFormulario(formulario);
             formularioChecklistGovernanca.setChecklist(checklistService.getChecklistById(governancaChecklistId));
             formularioChecklistService.save(formularioChecklistGovernanca);
+
+            System.out.println(formularioChecklistGovernanca);
 
             // Salvar o Formulario de Ambiental
             FormularioChecklist formularioChecklistAmbiental = new FormularioChecklist();
@@ -136,6 +140,7 @@ public class FormularioController {
                     "descricao", formulario.getDescricao()
             ));
 
+            System.out.println(response);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (Exception e) {
@@ -144,6 +149,7 @@ public class FormularioController {
             errorResponse.put("success", false);
             errorResponse.put("message", "Erro ao criar o formulário");
             errorResponse.put("error", e.getMessage());
+            System.out.println(errorResponse);
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }

@@ -17,6 +17,7 @@ public class FormularioService {
     public void save(Formulario formulario) {
         formularioRepository.save(formulario);
     }
+
     public List<Formulario> getAllFormulario() {
         return formularioRepository.findAll();
     }
